@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_DocumentGeneration" targetNamespace="http://careerflow.com/workflow" exporter="Camunda Modeler" exporterVersion="5.42.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
+  <bpmn:process id="document-generation-process" name="Document Generation Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_DocumentGeneration" name="Start">
+      <bpmn:outgoing>Flow_Start_Generate</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_GenerateDocument" name="Generate Document">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="generate-document" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Generate</bpmn:incoming>
+      <bpmn:outgoing>Flow_Generate_Publish</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_PublishDocumentEvent" name="Publish Document Event">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="publish-document-event" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Generate_Publish</bpmn:incoming>
+      <bpmn:outgoing>Flow_Publish_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_DocumentGeneration" name="End">
+      <bpmn:incoming>Flow_Publish_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Generate" sourceRef="StartEvent_DocumentGeneration" targetRef="Task_GenerateDocument" />
+    <bpmn:sequenceFlow id="Flow_Generate_Publish" sourceRef="Task_GenerateDocument" targetRef="Task_PublishDocumentEvent" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="Task_PublishDocumentEvent" targetRef="EndEvent_DocumentGeneration" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_DocumentGeneration">
+    <bpmndi:BPMNPlane id="BPMNPlane_DocumentGeneration" bpmnElement="document-generation-process">
+      <bpmndi:BPMNShape id="StartEvent_DocumentGeneration_di" bpmnElement="StartEvent_DocumentGeneration">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="145" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GenerateDocument_di" bpmnElement="Task_GenerateDocument">
+        <dc:Bounds x="250" y="80" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PublishDocumentEvent_di" bpmnElement="Task_PublishDocumentEvent">
+        <dc:Bounds x="480" y="80" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_DocumentGeneration_di" bpmnElement="EndEvent_DocumentGeneration">
+        <dc:Bounds x="732" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="740" y="145" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Generate_di" bpmnElement="Flow_Start_Generate">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="250" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Generate_Publish_di" bpmnElement="Flow_Generate_Publish">
+        <di:waypoint x="410" y="120" />
+        <di:waypoint x="480" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Publish_End_di" bpmnElement="Flow_Publish_End">
+        <di:waypoint x="660" y="120" />
+        <di:waypoint x="732" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

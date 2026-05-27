@@ -1,0 +1,67 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: ai-generation-service
+  Kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      properties:
+        spring.json.add.type.headers: false
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.2
+
+careerflow:
+  services:
+    profile-service-url: ${PROFILE_SERVICE_URL:http://localhost:8081}
+    job-service-url: ${JOB_SERVICE_URL:http://localhost:8082}
+    matching-service-url: ${MATCHING_SERVICE_URL:http://localhost:8083}
+    document-service-url: ${DOCUMENT_SERVICE_URL:http://localhost:8085}
+
+  kafka:
+    topics:
+      bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      document-generated: document.generated
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+
+  endpoint:
+    health:
+      show-details: always
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+resilience4j:
+  retry:
+    instances:
+      openAiRetry:
+        max-attempts: 3
+        wait-duration: 2s
+
+  circuitbreaker:
+    instances:
+      openAiCircuitBreaker:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+
+  timelimiter:
+    instances:
+      openAiTimeLimiter:
+        timeout-duration: 25s

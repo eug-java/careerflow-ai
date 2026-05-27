@@ -1,0 +1,38 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: matching-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/careerflow_matching}
+    username: ${SPRING_DATASOURCE_USERNAME:careerflow}
+    password: ${SPRING_DATASOURCE_PASSWORD:careerflow}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
+careerflow:
+  services:
+    profile-service-url: ${PROFILE_SERVICE_URL:http://localhost:8081}
+    job-service-url: ${JOB_SERVICE_URL:http://localhost:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  metrics:
+    tags:
+      application: ${spring.application.name}

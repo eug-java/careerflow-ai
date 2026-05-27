@@ -1,0 +1,45 @@
+server:
+  port: 8086
+spring:
+  application:
+    name: workflow-service
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      properties:
+        spring.json.value.default.type: com.careerflow.common.event.DocumentGeneratedEvent
+camunda:
+  client:
+    mode: self-managed
+    zeebe:
+      grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
+careerflow:
+  kafka:
+    topics:
+      document-generated: ${DOCUMENT_GENERATED_TOPIC:document.generated}
+  services:
+    ai-generation-url: ${AI_GENERATION_SERVICE_URL:http://localhost:8084}
+resilience4j:
+  retry:
+    instances:
+      aiGenerationServiceRetry:
+        max-attempts: 2
+        wait-duration: 1s
+  circuitbreaker:
+    instances:
+      aiGenerationServiceCircuitBreaker:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 70
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries

@@ -1,0 +1,58 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: document-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5435/careerflow_document}
+    username: ${SPRING_DATASOURCE_USERNAME:careerflow}
+    password: ${SPRING_DATASOURCE_PASSWORD:careerflow}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: document-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.careerflow.common.event.DocumentGeneratedEvent
+    producer:
+      properties:
+        spring.json.add.type.headers: false
+
+careerflow:
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:careerflow}
+    secret-key: ${MINIO_SECRET_KEY:careerflow123}
+    bucket: ${MINIO_BUCKET:careerflow-documents}
+
+  kafka:
+    topics:
+      document-generated: document.generated
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  metrics:
+    tags:
+      application: ${spring.application.name}

@@ -1,0 +1,28 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Maven
+target/
+
+# Node
+node_modules/
+dist/
+
+# Logs
+logs/
+*.log
+
+# Env
+.env
+**/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+build/
+
+# Local configs
+application-local.yml

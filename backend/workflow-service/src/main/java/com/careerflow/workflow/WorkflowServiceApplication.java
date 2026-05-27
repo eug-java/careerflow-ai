@@ -1,0 +1,16 @@
+/*************************************
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Evgenii Buianov
+ */
+
+package com.careerflow.workflow;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class WorkflowServiceApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(WorkflowServiceApplication.class, args);
+    }
+}

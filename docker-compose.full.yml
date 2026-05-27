@@ -1,0 +1,388 @@
+services:
+  profile-postgres:
+    image: postgres:16
+    container_name: careerflow-profile-postgres
+    environment:
+      POSTGRES_DB: careerflow_profile
+      POSTGRES_USER: careerflow
+      POSTGRES_PASSWORD: careerflow
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U careerflow -d careerflow_profile" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  job-postgres:
+    image: postgres:16
+    container_name: careerflow-job-postgres
+    environment:
+      POSTGRES_DB: careerflow_job
+      POSTGRES_USER: careerflow
+      POSTGRES_PASSWORD: careerflow
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U careerflow -d careerflow_job" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  matching-postgres:
+    image: postgres:16
+    container_name: careerflow-matching-postgres
+    environment:
+      POSTGRES_DB: careerflow_matching
+      POSTGRES_USER: careerflow
+      POSTGRES_PASSWORD: careerflow
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U careerflow -d careerflow_matching" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  document-postgres:
+    image: postgres:16
+    container_name: careerflow-document-postgres
+    environment:
+      POSTGRES_DB: careerflow_document
+      POSTGRES_USER: careerflow
+      POSTGRES_PASSWORD: careerflow
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U careerflow -d careerflow_document" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:4.1.2
+    container_name: careerflow-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1"
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: careerflow-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ACCESS_KEY: careerflow
+      MINIO_SECRET_KEY: careerflow123
+      MINIO_ROOT_USER: careerflow
+      MINIO_ROOT_PASSWORD: careerflow123
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:9000/minio/health/live"
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    container_name: careerflow-jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  zeebe:
+    image: camunda/zeebe:8.5.23
+    container_name: careerflow-zeebe
+
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+
+    environment:
+      ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED: "false"
+
+  prometheus:
+    image: prom/prometheus:v3.11.3
+    container_name: careerflow-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:13.1.0-25893932881
+    container_name: careerflow-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: backend/auth-service/Dockerfile
+
+    container_name: careerflow-auth-service
+    ports:
+      - "8079:8079"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me}
+      OTEL_SERVICE_NAME: auth-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      jaeger:
+        condition: service_started
+
+  profile-service:
+    build:
+      context: .
+      dockerfile: backend/profile-service/Dockerfile
+    container_name: careerflow-profile-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://profile-postgres:5432/careerflow_profile
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      OTEL_SERVICE_NAME: profile-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      profile-postgres:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+
+  job-service:
+    build:
+      context: .
+      dockerfile: backend/job-service/Dockerfile
+    container_name: careerflow-job-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://job-postgres:5432/careerflow_job
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      OTEL_SERVICE_NAME: job-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      job-postgres:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+
+  matching-service:
+    build:
+      context: .
+      dockerfile: backend/matching-service/Dockerfile
+    container_name: careerflow-matching-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://matching-postgres:5432/careerflow_matching
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      OTEL_SERVICE_NAME: matching-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      matching-postgres:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+
+  ai-generation-service:
+    build:
+      context: .
+      dockerfile: backend/ai-generation-service/Dockerfile
+    container_name: careerflow-ai-generation-service
+    ports:
+      - "8084:8084"
+    environment:
+      OPENAI_API_KEY: your-api-key
+      PROFILE_SERVICE_URL: http://profile-service:8081
+      JOB_SERVICE_URL: http://job-service:8082
+      OTEL_SERVICE_NAME: ai-generation-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      jaeger:
+        condition: service_started
+
+  document-service:
+    build:
+      context: .
+      dockerfile: backend/document-service/Dockerfile
+    container_name: careerflow-document-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://document-postgres:5432/careerflow_document
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: careerflow
+      MINIO_SECRET_KEY: careerflow123
+      MINIO_BUCKET: careerflow-documents
+      OTEL_SERVICE_NAME: document-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      document-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+
+  workflow-service:
+    build:
+      context: .
+      dockerfile: backend/workflow-service/Dockerfile
+    container_name: careerflow-workflow-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      AI_GENERATION_SERVICE_URL: http://ai-generation-service:8084
+      OTEL_SERVICE_NAME: workflow-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      ZEEBE_GRPC_ADDRESS: http://zeebe:26500
+    depends_on:
+      kafka:
+        condition: service_healthy
+      ai-generation-service:
+        condition: service_started
+      jaeger:
+        condition: service_started
+      zeebe:
+        condition: service_started
+
+
+  api-gateway-service:
+    build:
+      context: .
+      dockerfile: backend/api-gateway-service/Dockerfile
+    container_name: careerflow-api-gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me}
+      AUTH_SERVICE_URL: http://auth-service:8079
+      PROFILE_SERVICE_URL: http://profile-service:8081
+      JOB_SERVICE_URL: http://job-service:8082
+      MATCHING_SERVICE_URL: http://matching-service:8083
+      AI_GENERATION_SERVICE_URL: http://ai-generation-service:8084
+      DOCUMENT_SERVICE_URL: http://document-service:8085
+      WORKFLOW_SERVICE_URL: http://workflow-service:8086
+      WORKFLOW_WS_URL: ws://workflow-service:8086
+      OTEL_SERVICE_NAME: api-gateway-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      auth-service:
+        condition: service_started
+      profile-service:
+        condition: service_started
+      job-service:
+        condition: service_started
+      matching-service:
+        condition: service_started
+      ai-generation-service:
+        condition: service_started
+      document-service:
+        condition: service_started
+      workflow-service:
+        condition: service_started
+      jaeger:
+        condition: service_started
+
+
+  frontend:
+    build:
+      context: ./frontend/web-app
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    container_name: careerflow-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      api-gateway-service:
+        condition: service_started
+      jaeger:
+        condition: service_started
+
+volumes:
+  careerflow-profile-postgres-data:
+  careerflow-job-postgres-data:
+  careerflow-matching-postgres-data:
+  careerflow-document-postgres-data:
+  careerflow-minio-data:
+
