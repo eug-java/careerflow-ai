@@ -12,9 +12,11 @@ import com.nimbusds.jwt.SignedJWT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class JwtTokenService {
@@ -34,6 +36,10 @@ public class JwtTokenService {
     }
 
     public String generateToken(String username) {
+        return generateToken(username, userIdFromUsername(username));
+    }
+
+    public String generateToken(String username, UUID userId) {
         try {
             Instant now = Instant.now();
             Instant expiresAt = now.plusSeconds(expirationMinutes * 60);
@@ -43,14 +49,13 @@ public class JwtTokenService {
                     .issuer(issuer)
                     .issueTime(Date.from(now))
                     .expirationTime(Date.from(expiresAt))
+                    .claim("userId", userId.toString())
                     .claim("roles", List.of("USER"))
                     .build();
 
             JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
             SignedJWT signedJWT = new SignedJWT(header, claims);
-
             signedJWT.sign(new MACSigner(secret.getBytes()));
-
             return signedJWT.serialize();
         } catch (JOSEException e) {
             throw new IllegalStateException("Failed to generate JWT token", e);
@@ -59,5 +64,9 @@ public class JwtTokenService {
 
     public long expiresInSeconds() {
         return expirationMinutes * 60;
+    }
+
+    private UUID userIdFromUsername(String username) {
+        return UUID.nameUUIDFromBytes(("careerflow-user:" + username).getBytes(StandardCharsets.UTF_8));
     }
 }

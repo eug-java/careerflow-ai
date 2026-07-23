@@ -1,5 +1,7 @@
 package com.careerflow.matching.service;
 
+import com.careerflow.common.api.ResourceNotFoundException;
+import com.careerflow.common.test.TestAuthSupport;
 import com.careerflow.matching.client.JobClient;
 import com.careerflow.matching.client.JobResponse;
 import com.careerflow.matching.client.ProfileClient;
@@ -8,6 +10,8 @@ import com.careerflow.matching.dto.CreateMatchRequest;
 import com.careerflow.matching.dto.MatchResultResponse;
 import com.careerflow.matching.entity.JobMatchResult;
 import com.careerflow.matching.repository.JobMatchResultRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,6 +50,18 @@ class MatchingServiceTest {
 
     @InjectMocks
     private MatchingService service;
+
+    private UUID ownerId;
+
+    @BeforeEach
+    void setUp() {
+        ownerId = TestAuthSupport.authenticateTestUser();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TestAuthSupport.clear();
+    }
 
     @Test
     void calculateFetchesProfileAndJobCalculatesScorePersistsResultAndReturnsResponse() throws Exception {
@@ -93,13 +109,14 @@ class MatchingServiceTest {
         assertThat(saved.getJobId()).isEqualTo(jobId);
         assertThat(saved.getTotalScore()).isEqualByComparingTo("88.50");
         assertThat(saved.getExplanation()).isEqualTo("Good match");
+        assertThat(saved.getOwnerId()).isEqualTo(ownerId);
     }
 
     @Test
     void findByIdReturnsExistingMatch() throws Exception {
         UUID id = UUID.randomUUID();
         JobMatchResult result = result(id, UUID.randomUUID(), UUID.randomUUID());
-        when(repository.findById(id)).thenReturn(Optional.of(result));
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.of(result));
 
         MatchResultResponse response = service.findById(id);
 
@@ -110,10 +127,10 @@ class MatchingServiceTest {
     @Test
     void findByIdThrowsWhenMatchDoesNotExist() {
         UUID id = UUID.randomUUID();
-        when(repository.findById(id)).thenReturn(Optional.empty());
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.findById(id))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Match result not found")
                 .hasMessageContaining(id.toString());
     }
@@ -122,13 +139,13 @@ class MatchingServiceTest {
     void findAllFiltersByProfileIdWhenProfileIdIsProvided() throws Exception {
         UUID profileId = UUID.randomUUID();
         JobMatchResult result = result(UUID.randomUUID(), profileId, UUID.randomUUID());
-        when(repository.findByProfileId(profileId)).thenReturn(List.of(result));
+        when(repository.findByOwnerIdAndProfileId(ownerId, profileId)).thenReturn(List.of(result));
 
         List<MatchResultResponse> responses = service.findAll(profileId, UUID.randomUUID());
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().profileId()).isEqualTo(profileId);
-        verify(repository).findByProfileId(profileId);
+        verify(repository).findByOwnerIdAndProfileId(ownerId, profileId);
         verifyNoMoreInteractions(repository);
     }
 
@@ -136,13 +153,13 @@ class MatchingServiceTest {
     void findAllFiltersByJobIdWhenOnlyJobIdIsProvided() throws Exception {
         UUID jobId = UUID.randomUUID();
         JobMatchResult result = result(UUID.randomUUID(), UUID.randomUUID(), jobId);
-        when(repository.findByJobId(jobId)).thenReturn(List.of(result));
+        when(repository.findByOwnerIdAndJobId(ownerId, jobId)).thenReturn(List.of(result));
 
         List<MatchResultResponse> responses = service.findAll(null, jobId);
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().jobId()).isEqualTo(jobId);
-        verify(repository).findByJobId(jobId);
+        verify(repository).findByOwnerIdAndJobId(ownerId, jobId);
         verifyNoMoreInteractions(repository);
     }
 
@@ -150,7 +167,7 @@ class MatchingServiceTest {
     void findAllReturnsAllMatchesWhenNoFiltersProvided() throws Exception {
         JobMatchResult first = result(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
         JobMatchResult second = result(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-        when(repository.findAll()).thenReturn(List.of(first, second));
+        when(repository.findByOwnerId(ownerId)).thenReturn(List.of(first, second));
 
         List<MatchResultResponse> responses = service.findAll(null, null);
 

@@ -160,12 +160,39 @@ Demo login:
 demo / demo
 ```
 
+## Test Coverage
+
+Backend uses [JaCoCo](https://www.jacoco.org/) during `mvn verify`. Each module must maintain at least **50% line coverage** (excluding Spring Boot application entrypoints).
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+mvn -f backend/pom.xml clean verify
+```
+
+HTML reports are generated at `backend/<module>/target/site/jacoco/index.html`.
+
+CI uploads coverage reports as build artifacts and fails if thresholds are not met.
+
 ## Environment Configuration
 
-Set environment variable:
+Set environment variables:
+
 ```Bash
 export OPENAI_API_KEY=your_key_here
 export JWT_SECRET=change-me-change-me-change-me-change-me
+export CAREERFLOW_INTERNAL_API_KEY=local-internal-key
+```
+
+`JWT_SECRET` must be at least 32 characters and shared across auth-service, api-gateway, and all resource servers.
+
+`CAREERFLOW_INTERNAL_API_KEY` secures service-to-service calls (workflow → ai-generation → profile/job).
+
+Refresh an expired access token:
+
+```Bash
+curl -X POST http://localhost:8080/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"YOUR_REFRESH_TOKEN"}'
 ```
 
 ## Core API Examples
@@ -198,7 +225,7 @@ curl -L http://localhost:8080/api/v1/documents/DOCUMENT_ID/pdf \
 -H "Authorization: Bearer TOKEN" \
 -o document.pdf
 ```
-`
+
 Download DOCX
 
 ```Bash

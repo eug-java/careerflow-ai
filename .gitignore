@@ -25,4 +25,5 @@ Thumbs.db
 build/
 
 # Local configs
-application-local.yml
+*.pdf
+document.pdf

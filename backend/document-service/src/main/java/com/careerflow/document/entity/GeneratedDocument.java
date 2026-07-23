@@ -20,6 +20,9 @@ public class GeneratedDocument {
     private UUID profileId;
     private UUID jobId;
 
+    private UUID ownerId;
+    private UUID sourceEventId;
+
     private String documentType;
     private String fileName;
     private String contentType;
@@ -43,6 +46,22 @@ public class GeneratedDocument {
 
     public void setProfileId(UUID profileId) {
         this.profileId = profileId;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public UUID getSourceEventId() {
+        return sourceEventId;
+    }
+
+    public void setSourceEventId(UUID sourceEventId) {
+        this.sourceEventId = sourceEventId;
     }
 
     public UUID getJobId() {

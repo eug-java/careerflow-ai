@@ -10,6 +10,9 @@ import com.careerflow.profile.entity.CandidateExperience;
 import com.careerflow.profile.entity.CandidateProfile;
 import com.careerflow.profile.entity.CandidateSkill;
 import com.careerflow.profile.repository.CandidateProfileRepository;
+import com.careerflow.common.api.ForbiddenException;
+import com.careerflow.common.security.CurrentUserProvider;
+import com.careerflow.common.security.InternalAuthSupport;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.careerflow.profile.exception.ProfileNotFoundException;
@@ -29,6 +32,9 @@ public class CandidateProfileService {
     @Transactional
     public CandidateProfileResponse create(CreateCandidateProfileRequest request) {
         CandidateProfile profile = new CandidateProfile();
+        if (!InternalAuthSupport.isInternalCall()) {
+            profile.setOwnerId(CurrentUserProvider.requireUserId());
+        }
 
         applyProfileFields(profile, request);
         replaceSkills(profile, request.skills());
@@ -39,10 +45,11 @@ public class CandidateProfileService {
 
     @Transactional(readOnly = true)
     public List<CandidateProfileResponse> findAll() {
-        return repository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        if (InternalAuthSupport.isInternalCall()) {
+            return repository.findAll().stream().map(this::toResponse).toList();
+        }
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        return repository.findByOwnerId(ownerId).stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -69,6 +76,7 @@ public class CandidateProfileService {
     @Transactional
     public CandidateProfileResponse update(UUID id, CreateCandidateProfileRequest request) {
         CandidateProfile profile = findEntityById(id);
+        assertOwned(profile);
 
         applyProfileFields(profile, request);
         replaceSkills(profile, request.skills());
@@ -80,6 +88,7 @@ public class CandidateProfileService {
     @Transactional
     public void delete(UUID id) {
         CandidateProfile profile = findEntityById(id);
+        assertOwned(profile);
         repository.delete(profile);
     }
 //    @Transactional
@@ -92,8 +101,21 @@ public class CandidateProfileService {
 //    }
 
     private CandidateProfile findEntityById(UUID id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ProfileNotFoundException(id));
+        if (InternalAuthSupport.isInternalCall()) {
+            return repository.findById(id).orElseThrow(() -> new ProfileNotFoundException(id));
+        }
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        return repository.findByIdAndOwnerId(id, ownerId).orElseThrow(() -> new ProfileNotFoundException(id));
+    }
+
+    private void assertOwned(CandidateProfile profile) {
+        if (InternalAuthSupport.isInternalCall()) {
+            return;
+        }
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        if (profile.getOwnerId() != null && !ownerId.equals(profile.getOwnerId())) {
+            throw new ForbiddenException("Profile access denied");
+        }
     }
 
     private void applyProfileFields(CandidateProfile profile, CreateCandidateProfileRequest request) {

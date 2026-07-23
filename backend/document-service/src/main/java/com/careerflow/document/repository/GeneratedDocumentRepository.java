@@ -1,8 +1,3 @@
-/*************************************
- * SPDX-License-Identifier: MIT
- * Copyright (c) 2026 Evgenii Buianov
- */
-
 package com.careerflow.document.repository;
 
 import com.careerflow.document.entity.GeneratedDocument;
@@ -13,7 +8,9 @@ import java.util.UUID;
 
 public interface GeneratedDocumentRepository extends JpaRepository<GeneratedDocument, UUID> {
 
-    List<GeneratedDocument> findByProfileId(UUID profileId);
+    List<GeneratedDocument> findByOwnerId(UUID ownerId);
 
-    List<GeneratedDocument> findByJobId(UUID jobId);
+    List<GeneratedDocument> findByOwnerIdAndProfileId(UUID ownerId, UUID profileId);
+
+    List<GeneratedDocument> findByOwnerIdAndJobId(UUID ownerId, UUID jobId);
 }

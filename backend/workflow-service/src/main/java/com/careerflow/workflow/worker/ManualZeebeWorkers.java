@@ -111,10 +111,12 @@ public class ManualZeebeWorkers {
                         String jobId = (String) variables.get("jobId");
                         String documentType = (String) variables.get("documentType");
                         String generatedContent = (String) variables.get("generatedContent");
+                        String ownerId = (String) variables.get("ownerId");
 
                         eventPublisher.publish(
                                 new DocumentGeneratedEvent(
                                         UUID.randomUUID(),
+                                        UUID.fromString(ownerId),
                                         UUID.fromString(profileId),
                                         UUID.fromString(jobId),
                                         documentType,

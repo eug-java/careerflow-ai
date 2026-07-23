@@ -39,6 +39,8 @@ public class JobDescription {
 
     private Instant createdAt;
 
+    private UUID ownerId;
+
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JobSkill> skills = new ArrayList<>();
 

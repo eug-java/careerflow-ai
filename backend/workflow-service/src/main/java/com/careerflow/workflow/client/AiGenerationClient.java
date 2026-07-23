@@ -1,10 +1,6 @@
-/*************************************
- * SPDX-License-Identifier: MIT
- * Copyright (c) 2026 Evgenii Buianov
- */
-
 package com.careerflow.workflow.client;
 
+import com.careerflow.common.client.InternalClientHeaders;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +13,15 @@ import java.util.UUID;
 public class AiGenerationClient {
     private final RestClient restClient;
 
-    public AiGenerationClient(RestClient.Builder builder,
-                              @Value("${careerflow.services.ai-generation-url}") String aiGenerationServiceUrl) {
-        this.restClient = builder.baseUrl(aiGenerationServiceUrl).build();
+    public AiGenerationClient(
+            RestClient.Builder builder,
+            @Value("${careerflow.services.ai-generation-url}") String aiGenerationServiceUrl,
+            InternalClientHeaders internalClientHeaders
+    ) {
+        this.restClient = builder
+                .baseUrl(aiGenerationServiceUrl)
+                .defaultHeader(InternalClientHeaders.HEADER, internalClientHeaders.apiKey())
+                .build();
     }
 
     @Retry(name = "aiGenerationServiceRetry")

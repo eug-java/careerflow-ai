@@ -1,20 +1,20 @@
 package com.careerflow.document.event;
 
+import com.careerflow.common.event.DocumentGeneratedEvent;
 import com.careerflow.document.dto.SaveGeneratedDocumentRequest;
+import com.careerflow.document.entity.ProcessedEvent;
+import com.careerflow.document.repository.ProcessedEventRepository;
 import com.careerflow.document.service.DocumentService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.careerflow.common.event.DocumentGeneratedEvent;
-
 
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentGeneratedEventConsumerTest {
@@ -22,29 +22,23 @@ class DocumentGeneratedEventConsumerTest {
     @Mock
     private DocumentService documentService;
 
+    @InjectMocks
+    private DocumentGeneratedEventConsumer consumer;
+
     @Test
-    void consumeShouldSaveGeneratedDocumentFromKafkaEvent() {
-        DocumentGeneratedEventConsumer consumer = new DocumentGeneratedEventConsumer(documentService);
-        UUID profileId = UUID.randomUUID();
-        UUID jobId = UUID.randomUUID();
+    void consumeDelegatesToDocumentService() {
         DocumentGeneratedEvent event = new DocumentGeneratedEvent(
                 UUID.randomUUID(),
-                profileId,
-                jobId,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
                 "RESUME",
-                "generated content",
+                "content",
                 Instant.now()
         );
 
         consumer.consume(event);
 
-        ArgumentCaptor<SaveGeneratedDocumentRequest> requestCaptor = ArgumentCaptor.forClass(SaveGeneratedDocumentRequest.class);
-        verify(documentService).save(requestCaptor.capture());
-        SaveGeneratedDocumentRequest request = requestCaptor.getValue();
-
-        assertThat(request.profileId()).isEqualTo(profileId);
-        assertThat(request.jobId()).isEqualTo(jobId);
-        assertThat(request.documentType()).isEqualTo("RESUME");
-        assertThat(request.content()).isEqualTo("generated content");
+        verify(documentService).saveFromEvent(event);
     }
 }

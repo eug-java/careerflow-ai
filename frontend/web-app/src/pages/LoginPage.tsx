@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../api/authApi";
+import { login, storeAuthTokens } from "../api/authApi";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function LoginPage() {
 
         try {
             const result = await login(username, password);
-            localStorage.setItem("accessToken", result.accessToken);
+            storeAuthTokens(result);
             navigate("/profiles");
         } catch {
             setError("Invalid username or password.");

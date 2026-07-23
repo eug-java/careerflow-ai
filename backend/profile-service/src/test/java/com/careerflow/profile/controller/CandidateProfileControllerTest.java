@@ -1,6 +1,8 @@
 
 package com.careerflow.profile.controller;
 
+import com.careerflow.common.api.GlobalExceptionHandler;
+import com.careerflow.common.security.CareerflowSecurityAutoConfiguration;
 import com.careerflow.profile.dto.CandidateProfileResponse;
 import com.careerflow.profile.dto.ExperienceResponse;
 import com.careerflow.profile.dto.SkillResponse;
@@ -9,8 +11,10 @@ import com.careerflow.profile.service.CandidateProfileService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,7 +31,9 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CandidateProfileController.class)
+@WebMvcTest(controllers = CandidateProfileController.class, excludeAutoConfiguration = CareerflowSecurityAutoConfiguration.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 class CandidateProfileControllerTest {
 
     @Autowired
@@ -36,7 +42,7 @@ class CandidateProfileControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private CandidateProfileService service;
 
     @Test

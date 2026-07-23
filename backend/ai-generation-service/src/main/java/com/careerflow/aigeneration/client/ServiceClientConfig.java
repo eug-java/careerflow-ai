@@ -1,10 +1,6 @@
-/*************************************
- * SPDX-License-Identifier: MIT
- * Copyright (c) 2026 Evgenii Buianov
- */
-
 package com.careerflow.aigeneration.client;
 
+import com.careerflow.common.client.InternalClientHeaders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,28 +11,34 @@ public class ServiceClientConfig {
 
     @Bean
     public WebClient profileWebClient(
-            @Value("${careerflow.services.profile-service-url}") String baseUrl
+            @Value("${careerflow.services.profile-service-url}") String baseUrl,
+            InternalClientHeaders internalClientHeaders
     ) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
+                .defaultHeader(InternalClientHeaders.HEADER, internalClientHeaders.apiKey())
                 .build();
     }
 
     @Bean
     public WebClient jobWebClient(
-            @Value("${careerflow.services.job-service-url}") String baseUrl
+            @Value("${careerflow.services.job-service-url}") String baseUrl,
+            InternalClientHeaders internalClientHeaders
     ) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
+                .defaultHeader(InternalClientHeaders.HEADER, internalClientHeaders.apiKey())
                 .build();
     }
 
     @Bean
     public WebClient documentWebClient(
-            @Value("${careerflow.services.document-service-url}") String baseUrl
+            @Value("${careerflow.services.document-service-url}") String baseUrl,
+            InternalClientHeaders internalClientHeaders
     ) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
+                .defaultHeader(InternalClientHeaders.HEADER, internalClientHeaders.apiKey())
                 .build();
     }
 }

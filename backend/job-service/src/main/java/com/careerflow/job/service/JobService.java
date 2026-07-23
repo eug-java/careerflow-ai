@@ -1,19 +1,18 @@
-/*************************************
- * SPDX-License-Identifier: MIT
- * Copyright (c) 2026 Evgenii Buianov
- */
-
 package com.careerflow.job.service;
 
+import com.careerflow.common.api.ForbiddenException;
+import com.careerflow.common.api.ResourceNotFoundException;
+import com.careerflow.common.security.CurrentUserProvider;
+import com.careerflow.common.security.InternalAuthSupport;
 import com.careerflow.job.dto.*;
 import com.careerflow.job.entity.JobDescription;
 import com.careerflow.job.entity.JobSkill;
 import com.careerflow.job.repository.JobRepository;
 import org.springframework.stereotype.Service;
-import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class JobService {
@@ -37,6 +36,9 @@ public class JobService {
         job.setCurrency(request.currency());
         job.setRemote(request.remote());
         job.setDescription(request.description());
+        if (!InternalAuthSupport.isInternalCall()) {
+            job.setOwnerId(CurrentUserProvider.requireUserId());
+        }
 
         if (request.skills() != null) {
             for (JobSkillRequest s : request.skills()) {
@@ -53,47 +55,29 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public JobResponse findById(UUID id) {
-        JobDescription job = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Job not found: " + id));
-
-        return toResponse(job);
+        return toResponse(requireJob(id));
     }
+
     @Transactional(readOnly = true)
     public List<JobResponse> findAll() {
-        return repository.findAll().stream().map(this::toResponse).toList();
+        if (InternalAuthSupport.isInternalCall()) {
+            return repository.findAll().stream().map(this::toResponse).toList();
+        }
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        return repository.findByOwnerId(ownerId).stream().map(this::toResponse).toList();
     }
 
     @Transactional
     public void delete(UUID id) {
-        JobDescription job = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Job not found: " + id));
-
+        JobDescription job = requireJob(id);
+        assertOwned(job);
         repository.delete(job);
-    }
-
-    private JobResponse toResponse(JobDescription job) {
-        return new JobResponse(
-                job.getId(),
-                job.getTitle(),
-                job.getCompanyName(),
-                job.getLocation(),
-                job.getEmploymentType(),
-                job.getSalaryMin(),
-                job.getSalaryMax(),
-                job.getCurrency(),
-                job.getRemote(),
-                job.getDescription(),
-                job.getSkills().stream()
-                        .map(s -> new JobSkillResponse(s.getId(), s.getName(), s.isRequired()))
-                        .toList(),
-                job.getCreatedAt()
-        );
     }
 
     @Transactional
     public JobResponse update(UUID id, CreateJobRequest request) {
-        JobDescription job = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Job not found: " + id));
+        JobDescription job = requireJob(id);
+        assertOwned(job);
 
         job.setTitle(request.title());
         job.setCompanyName(request.companyName());
@@ -113,11 +97,49 @@ public class JobService {
                 skill.setName(skillRequest.name());
                 skill.setRequired(skillRequest.required());
                 skill.setJob(job);
-
                 job.getSkills().add(skill);
             });
         }
 
         return toResponse(job);
+    }
+
+    private JobDescription requireJob(UUID id) {
+        if (InternalAuthSupport.isInternalCall()) {
+            return repository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + id));
+        }
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        return repository.findByIdAndOwnerId(id, ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + id));
+    }
+
+    private void assertOwned(JobDescription job) {
+        if (InternalAuthSupport.isInternalCall()) {
+            return;
+        }
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        if (job.getOwnerId() != null && !ownerId.equals(job.getOwnerId())) {
+            throw new ForbiddenException("Job access denied");
+        }
+    }
+
+    private JobResponse toResponse(JobDescription job) {
+        return new JobResponse(
+                job.getId(),
+                job.getTitle(),
+                job.getCompanyName(),
+                job.getLocation(),
+                job.getEmploymentType(),
+                job.getSalaryMin(),
+                job.getSalaryMax(),
+                job.getCurrency(),
+                job.getRemote(),
+                job.getDescription(),
+                job.getSkills().stream()
+                        .map(s -> new JobSkillResponse(s.getId(), s.getName(), s.isRequired()))
+                        .toList(),
+                job.getCreatedAt()
+        );
     }
 }

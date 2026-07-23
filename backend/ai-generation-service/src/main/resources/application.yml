@@ -4,8 +4,8 @@ server:
 spring:
   application:
     name: ai-generation-service
-  Kafka:
-    bootstrap-servers: localhost:9092
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       properties:
         spring.json.add.type.headers: false
@@ -20,6 +20,9 @@ spring:
           temperature: 0.2
 
 careerflow:
+  internal-api-key: ${CAREERFLOW_INTERNAL_API_KEY:local-internal-key}
+  jwt:
+    secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}
   services:
     profile-service-url: ${PROFILE_SERVICE_URL:http://localhost:8081}
     job-service-url: ${JOB_SERVICE_URL:http://localhost:8082}

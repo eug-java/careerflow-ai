@@ -32,6 +32,8 @@ public class CandidateProfile {
     private Instant createdAt;
     private Instant updatedAt;
 
+    private UUID ownerId;
+
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CandidateSkill> skills = new ArrayList<>();
 
@@ -108,6 +110,14 @@ public class CandidateProfile {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     public List<CandidateSkill> getSkills() {

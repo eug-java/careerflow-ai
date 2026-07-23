@@ -5,6 +5,9 @@
 
 package com.careerflow.matching.service;
 
+import com.careerflow.common.api.ResourceNotFoundException;
+import com.careerflow.common.security.CurrentUserProvider;
+import com.careerflow.common.security.InternalAuthSupport;
 import com.careerflow.matching.client.JobClient;
 import com.careerflow.matching.client.JobResponse;
 import com.careerflow.matching.client.ProfileClient;
@@ -53,6 +56,9 @@ public class MatchingService {
         result.setLocationScore(score.locationScore());
         result.setSalaryScore(score.salaryScore());
         result.setExplanation(score.explanation());
+        if (!InternalAuthSupport.isInternalCall()) {
+            result.setOwnerId(CurrentUserProvider.requireUserId());
+        }
 
         return toResponse(repository.save(result));
     }
@@ -73,29 +79,31 @@ public class MatchingService {
 
     @Transactional(readOnly = true)
     public MatchResultResponse findById(UUID id) {
-        JobMatchResult result = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Match result not found: " + id));
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        JobMatchResult result = repository.findByIdAndOwnerId(id, ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Match result not found: " + id));
 
         return toResponse(result);
     }
 
     @Transactional(readOnly = true)
     public List<MatchResultResponse> findAll(UUID profileId, UUID jobId) {
+        UUID ownerId = CurrentUserProvider.requireUserId();
         if (profileId != null) {
-            return repository.findByProfileId(profileId)
+            return repository.findByOwnerIdAndProfileId(ownerId, profileId)
                     .stream()
                     .map(this::toResponse)
                     .toList();
         }
 
         if (jobId != null) {
-            return repository.findByJobId(jobId)
+            return repository.findByOwnerIdAndJobId(ownerId, jobId)
                     .stream()
                     .map(this::toResponse)
                     .toList();
         }
 
-        return repository.findAll()
+        return repository.findByOwnerId(ownerId)
                 .stream()
                 .map(this::toResponse)
                 .toList();

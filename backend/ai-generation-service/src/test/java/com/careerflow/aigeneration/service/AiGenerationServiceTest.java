@@ -6,9 +6,11 @@ import com.careerflow.aigeneration.dto.DocumentType;
 import com.careerflow.aigeneration.dto.GenerateContentResponse;
 import com.careerflow.aigeneration.dto.GenerateDocumentRequest;
 import com.careerflow.aigeneration.dto.GenerateDocumentResponse;
-import com.careerflow.aigeneration.event.DocumentGeneratedEvent;
+import com.careerflow.common.event.DocumentGeneratedEvent;
+import com.careerflow.common.test.TestAuthSupport;
 import com.careerflow.aigeneration.event.DocumentGeneratedEventPublisher;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,6 +54,12 @@ class AiGenerationServiceTest {
                 meterRegistry,
                 aiMetricsService
         );
+        TestAuthSupport.authenticateTestUser();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TestAuthSupport.clear();
     }
 
     @Test

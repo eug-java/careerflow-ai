@@ -12,7 +12,8 @@ import com.careerflow.aigeneration.client.ProfileResponse;
 import com.careerflow.aigeneration.dto.GenerateContentResponse;
 import com.careerflow.aigeneration.dto.GenerateDocumentRequest;
 import com.careerflow.aigeneration.dto.GenerateDocumentResponse;
-import com.careerflow.aigeneration.event.DocumentGeneratedEvent;
+import com.careerflow.common.event.DocumentGeneratedEvent;
+import com.careerflow.common.security.CurrentUserProvider;
 import com.careerflow.aigeneration.event.DocumentGeneratedEventPublisher;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,15 +36,6 @@ public class AiGenerationService {
     private static final Logger log = LoggerFactory.getLogger(AiGenerationService.class);
     private final Counter generationCounter;
     private final AiMetricsService aiMetricsService;
-
-
-    private  MeterRegistry meterRegistry;
-    public void recordRequest(String documentType) {
-        Counter.builder("ai_generation_requests_total")
-                .description("Total AI generation requests")
-                .tag("document_type", documentType)
-                .register(meterRegistry);
-    }
 
     public AiGenerationService(
             ProfileClient profileClient,
@@ -104,6 +96,7 @@ public class AiGenerationService {
         eventPublisher.publish(
                 new DocumentGeneratedEvent(
                         UUID.randomUUID(),
+                        CurrentUserProvider.requireUserId(),
                         request.profileId(),
                         request.jobId(),
                         request.documentType().name(),

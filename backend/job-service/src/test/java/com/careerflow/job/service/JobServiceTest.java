@@ -1,11 +1,15 @@
 package com.careerflow.job.service;
 
+import com.careerflow.common.api.ResourceNotFoundException;
 import com.careerflow.job.dto.CreateJobRequest;
 import com.careerflow.job.dto.JobResponse;
 import com.careerflow.job.dto.JobSkillRequest;
 import com.careerflow.job.entity.JobDescription;
 import com.careerflow.job.entity.JobSkill;
 import com.careerflow.job.repository.JobRepository;
+import com.careerflow.common.test.TestAuthSupport;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +38,18 @@ class JobServiceTest {
 
     @InjectMocks
     private JobService service;
+
+    private UUID ownerId;
+
+    @BeforeEach
+    void setUpAuth() {
+        ownerId = TestAuthSupport.authenticateTestUser();
+    }
+
+    @AfterEach
+    void tearDownAuth() {
+        TestAuthSupport.clear();
+    }
 
     @Test
     void createShouldMapRequestToEntityAndReturnResponse() {
@@ -88,7 +104,7 @@ class JobServiceTest {
     void findByIdShouldReturnMappedJob() {
         UUID id = UUID.randomUUID();
         JobDescription job = job(id, "Java Engineer", "Spring", true);
-        when(repository.findById(id)).thenReturn(Optional.of(job));
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.of(job));
 
         JobResponse response = service.findById(id);
 
@@ -101,10 +117,10 @@ class JobServiceTest {
     @Test
     void findByIdShouldThrowWhenJobDoesNotExist() {
         UUID id = UUID.randomUUID();
-        when(repository.findById(id)).thenReturn(Optional.empty());
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.findById(id))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Job not found: " + id);
     }
 
@@ -112,7 +128,7 @@ class JobServiceTest {
     void findAllShouldReturnMappedJobs() {
         JobDescription first = job(UUID.randomUUID(), "Java Developer", "Java", true);
         JobDescription second = job(UUID.randomUUID(), "QA Engineer", "Selenium", false);
-        when(repository.findAll()).thenReturn(List.of(first, second));
+        when(repository.findByOwnerId(ownerId)).thenReturn(List.of(first, second));
 
         List<JobResponse> responses = service.findAll();
 
@@ -125,7 +141,7 @@ class JobServiceTest {
     void deleteShouldDeleteExistingJob() {
         UUID id = UUID.randomUUID();
         JobDescription job = job(id, "Java Engineer", "Java", true);
-        when(repository.findById(id)).thenReturn(Optional.of(job));
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.of(job));
 
         service.delete(id);
 
@@ -135,10 +151,10 @@ class JobServiceTest {
     @Test
     void deleteShouldThrowWhenJobDoesNotExist() {
         UUID id = UUID.randomUUID();
-        when(repository.findById(id)).thenReturn(Optional.empty());
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.delete(id))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Job not found: " + id);
         verify(repository, never()).delete(any());
     }
@@ -147,7 +163,7 @@ class JobServiceTest {
     void updateShouldReplaceScalarFieldsAndSkills() {
         UUID id = UUID.randomUUID();
         JobDescription existing = job(id, "Old title", "Old skill", true);
-        when(repository.findById(id)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.of(existing));
 
         CreateJobRequest request = request(
                 "Updated Java Developer",
@@ -168,7 +184,7 @@ class JobServiceTest {
     void updateShouldClearSkillsWhenRequestSkillsAreNull() {
         UUID id = UUID.randomUUID();
         JobDescription existing = job(id, "Old title", "Old skill", true);
-        when(repository.findById(id)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.of(existing));
 
         JobResponse response = service.update(id, request("No skills role", null));
 

@@ -18,6 +18,11 @@ spring:
   flyway:
     enabled: true
 
+careerflow:
+  internal-api-key: ${CAREERFLOW_INTERNAL_API_KEY:local-internal-key}
+  jwt:
+    secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}
+
 management:
   endpoints:
     web:

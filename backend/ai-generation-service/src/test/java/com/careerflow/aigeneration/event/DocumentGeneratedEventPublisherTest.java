@@ -1,5 +1,6 @@
 package com.careerflow.aigeneration.event;
 
+import com.careerflow.common.event.DocumentGeneratedEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.kafka.core.KafkaTemplate;
 
@@ -21,6 +22,7 @@ class DocumentGeneratedEventPublisherTest {
         );
         UUID profileId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         DocumentGeneratedEvent event = new DocumentGeneratedEvent(
+                UUID.randomUUID(),
                 UUID.randomUUID(),
                 profileId,
                 UUID.fromString("22222222-2222-2222-2222-222222222222"),

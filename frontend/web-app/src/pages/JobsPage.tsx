@@ -15,6 +15,7 @@ import {
 } from "../api/workflowApi";
 
 import { connectWorkflowStatusSocket } from "../api/workflowSocket";
+import { calculateMatch, type MatchResult } from "../api/matchingApi";
 
 export default function JobsPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -23,31 +24,35 @@ export default function JobsPage() {
     const [selectedProfileId, setSelectedProfileId] = useState<string>("");
 
     const [message, setMessage] = useState<string>("");
+    const [error, setError] = useState<string>("");
     const [workflowStatus, setWorkflowStatus] = useState<string>("");
+    const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
     const [currentProcessInstanceKey, setCurrentProcessInstanceKey] =
         useState<number | null>(null);
 
     useEffect(() => {
-        fetchJobs().then(setJobs);
+        fetchJobs()
+            .then(setJobs)
+            .catch((err: Error) => setError(err.message));
 
-        fetchProfiles().then((data) => {
-            setProfiles(data);
-
-            if (data.length > 0) {
-                setSelectedProfileId(data[0].id);
-            }
-        });
+        fetchProfiles()
+            .then((data) => {
+                setProfiles(data);
+                if (data.length > 0) {
+                    setSelectedProfileId(data[0].id);
+                }
+            })
+            .catch((err: Error) => setError(err.message));
     }, []);
 
     useEffect(() => {
-        const socket = connectWorkflowStatusSocket((message) => {
-            if (
-                currentProcessInstanceKey &&
-                message.processInstanceKey === currentProcessInstanceKey
-            ) {
-                setWorkflowStatus(message.status);
-            }
+        if (!currentProcessInstanceKey) {
+            return;
+        }
+
+        const socket = connectWorkflowStatusSocket(currentProcessInstanceKey, (statusMessage) => {
+            setWorkflowStatus(statusMessage.status);
         });
 
         return () => {
@@ -62,11 +67,27 @@ export default function JobsPage() {
             return;
         }
 
-        await deleteJob(jobId);
+        try {
+            await deleteJob(jobId);
+            setJobs((current) => current.filter((job) => job.id !== jobId));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to delete job");
+        }
+    }
 
-        setJobs((current) =>
-            current.filter((job) => job.id !== jobId)
-        );
+    async function handleMatch(jobId: string) {
+        if (!selectedProfileId) {
+            setError("Please select a profile first.");
+            return;
+        }
+
+        try {
+            setError("");
+            const result = await calculateMatch(selectedProfileId, jobId);
+            setMatchResult(result);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Match calculation failed");
+        }
     }
 
     async function handleGenerate(
@@ -74,36 +95,40 @@ export default function JobsPage() {
         documentType: "COVER_LETTER" | "RESUME"
     ) {
         if (!selectedProfileId) {
-            setMessage("Please select a profile first.");
+            setError("Please select a profile first.");
             return;
         }
 
-        const workflow = await startDocumentGenerationWorkflow({
-            profileId: selectedProfileId,
-            jobId,
-            documentType,
-        });
+        try {
+            setError("");
+            const workflow = await startDocumentGenerationWorkflow({
+                profileId: selectedProfileId,
+                jobId,
+                documentType,
+            });
 
-        const processInstanceKey = workflow.processInstanceKey;
+            const processInstanceKey = workflow.processInstanceKey;
 
-        setCurrentProcessInstanceKey(processInstanceKey);
-        setMessage(`Workflow started: ${processInstanceKey}`);
-        setWorkflowStatus("RUNNING");
+            setCurrentProcessInstanceKey(processInstanceKey);
+            setMessage(`Workflow started: ${processInstanceKey}`);
+            setWorkflowStatus("RUNNING");
 
-        const interval = setInterval(async () => {
-            try {
-                const status = await fetchWorkflowStatus(processInstanceKey);
+            const interval = setInterval(async () => {
+                try {
+                    const status = await fetchWorkflowStatus(processInstanceKey);
+                    setWorkflowStatus(status.status);
 
-                setWorkflowStatus(status.status);
-
-                if (status.status === "COMPLETED" || status.status === "FAILED") {
+                    if (status.status === "COMPLETED" || status.status === "FAILED") {
+                        clearInterval(interval);
+                    }
+                } catch (pollError) {
+                    console.error(pollError);
                     clearInterval(interval);
                 }
-            } catch (error) {
-                console.error(error);
-                clearInterval(interval);
-            }
-        }, 2000);
+            }, 2000);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Workflow start failed");
+        }
     }
 
     return (
@@ -125,9 +150,21 @@ export default function JobsPage() {
                         </div>
                     )}
 
+                    {error && (
+                        <div className="bg-red-100 text-red-800 px-4 py-2 rounded-xl">
+                            {error}
+                        </div>
+                    )}
+
                     {workflowStatus && (
                         <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-xl">
                             Workflow Status: {workflowStatus}
+                        </div>
+                    )}
+
+                    {matchResult && (
+                        <div className="bg-purple-100 text-purple-900 px-4 py-2 rounded-xl max-w-md text-sm">
+                            Match score: {matchResult.totalScore}% — {matchResult.explanation}
                         </div>
                     )}
                 </div>
@@ -171,6 +208,13 @@ export default function JobsPage() {
                             </div>
 
                             <div className="flex flex-col gap-3 min-w-48">
+                                <button
+                                    onClick={() => handleMatch(job.id)}
+                                    className="bg-purple-700 text-white px-4 py-2 rounded-xl hover:bg-purple-600"
+                                >
+                                    Calculate Match
+                                </button>
+
                                 <button
                                     onClick={() => handleGenerate(job.id, "COVER_LETTER")}
                                     className="bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700"

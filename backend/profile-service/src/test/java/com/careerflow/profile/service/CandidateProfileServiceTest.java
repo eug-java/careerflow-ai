@@ -9,6 +9,9 @@ import com.careerflow.profile.entity.CandidateProfile;
 import com.careerflow.profile.entity.CandidateSkill;
 import com.careerflow.profile.exception.ProfileNotFoundException;
 import com.careerflow.profile.repository.CandidateProfileRepository;
+import com.careerflow.common.test.TestAuthSupport;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -36,6 +39,18 @@ class CandidateProfileServiceTest {
 
     @InjectMocks
     private CandidateProfileService service;
+
+    private UUID ownerId;
+
+    @BeforeEach
+    void setUpAuth() {
+        ownerId = TestAuthSupport.authenticateTestUser();
+    }
+
+    @AfterEach
+    void tearDownAuth() {
+        TestAuthSupport.clear();
+    }
 
     @Test
     void createShouldMapRequestToEntityAndReturnResponse() {
@@ -98,21 +113,21 @@ class CandidateProfileServiceTest {
 
     @Test
     void findAllShouldReturnMappedProfiles() {
-        CandidateProfile profile = persistedProfile();
-        when(repository.findAll()).thenReturn(List.of(profile));
+        CandidateProfile profile = persistedProfile(ownerId);
+        when(repository.findByOwnerId(ownerId)).thenReturn(List.of(profile));
 
         var responses = service.findAll();
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().id()).isEqualTo(profile.getId());
         assertThat(responses.getFirst().fullName()).isEqualTo("Evgenii Buianov");
-        verify(repository).findAll();
+        verify(repository).findByOwnerId(ownerId);
     }
 
     @Test
     void findByIdShouldReturnProfileWhenExists() {
-        CandidateProfile profile = persistedProfile();
-        when(repository.findById(profile.getId())).thenReturn(Optional.of(profile));
+        CandidateProfile profile = persistedProfile(ownerId);
+        when(repository.findByIdAndOwnerId(profile.getId(), ownerId)).thenReturn(Optional.of(profile));
 
         var response = service.findById(profile.getId());
 
@@ -123,7 +138,7 @@ class CandidateProfileServiceTest {
     @Test
     void findByIdShouldThrowWhenProfileDoesNotExist() {
         UUID id = UUID.randomUUID();
-        when(repository.findById(id)).thenReturn(Optional.empty());
+        when(repository.findByIdAndOwnerId(id, ownerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(ProfileNotFoundException.class)
@@ -132,7 +147,7 @@ class CandidateProfileServiceTest {
 
     @Test
     void updateShouldReplaceProfileFieldsSkillsAndExperiences() {
-        CandidateProfile existing = persistedProfile();
+        CandidateProfile existing = persistedProfile(ownerId);
         CandidateSkill oldSkill = new CandidateSkill();
         oldSkill.setName("Old skill");
         oldSkill.setProfile(existing);
@@ -144,7 +159,7 @@ class CandidateProfileServiceTest {
         oldExperience.setProfile(existing);
         existing.getExperiences().add(oldExperience);
 
-        when(repository.findById(existing.getId())).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndOwnerId(existing.getId(), ownerId)).thenReturn(Optional.of(existing));
         when(repository.save(existing)).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.update(existing.getId(), fullRequest());
@@ -161,8 +176,8 @@ class CandidateProfileServiceTest {
 
     @Test
     void deleteShouldRemoveProfileWhenExists() {
-        CandidateProfile profile = persistedProfile();
-        when(repository.findById(profile.getId())).thenReturn(Optional.of(profile));
+        CandidateProfile profile = persistedProfile(ownerId);
+        when(repository.findByIdAndOwnerId(profile.getId(), ownerId)).thenReturn(Optional.of(profile));
 
         service.delete(profile.getId());
 
@@ -195,7 +210,7 @@ class CandidateProfileServiceTest {
         );
     }
 
-    private static CandidateProfile persistedProfile() {
+    private static CandidateProfile persistedProfile(UUID ownerId) {
         CandidateProfile profile = new CandidateProfile();
         profile.setFullName("Evgenii Buianov");
         profile.setProfessionalTitle("Java Backend Developer");
@@ -203,6 +218,7 @@ class CandidateProfileServiceTest {
         profile.setPhone("+1 512 555 0100");
         profile.setLocation("Austin, TX");
         profile.setSummary("Java backend engineer.");
+        profile.setOwnerId(ownerId);
         invokeLifecycle(profile, "prePersist");
         return profile;
     }

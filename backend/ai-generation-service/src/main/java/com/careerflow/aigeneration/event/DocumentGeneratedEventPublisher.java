@@ -1,10 +1,6 @@
-/*************************************
- * SPDX-License-Identifier: MIT
- * Copyright (c) 2026 Evgenii Buianov
- */
-
 package com.careerflow.aigeneration.event;
 
+import com.careerflow.common.event.DocumentGeneratedEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;

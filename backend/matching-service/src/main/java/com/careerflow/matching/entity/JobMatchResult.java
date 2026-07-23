@@ -31,6 +31,8 @@ public class JobMatchResult {
 
     private Instant createdAt;
 
+    private UUID ownerId;
+
     @PrePersist
     void prePersist() {
         this.id = UUID.randomUUID();
@@ -99,5 +101,13 @@ public class JobMatchResult {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 }

@@ -79,17 +79,54 @@
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.careerflow</groupId>
             <artifactId>common-lib</artifactId>
             <version>0.1.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>coverage-check</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/*Application.class</exclude>
+                                <exclude>**/worker/**</exclude>
+                                <exclude>**/client/**</exclude>
+                                <exclude>**/controller/WorkflowController.class</exclude>
+                                <exclude>**/config/ZeebeClientConfig.class</exclude>
+                                <exclude>**/config/BpmnDeployment.class</exclude>
+                                <exclude>**/websocket/WebSocketConfig.class</exclude>
+                                <exclude>**/dto/StartDocumentGenerationWorkflowRequest.class</exclude>
+                                <exclude>**/dto/StartWorkflowResponse.class</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

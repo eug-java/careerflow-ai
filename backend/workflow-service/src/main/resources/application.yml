@@ -1,8 +1,19 @@
 server:
   port: 8086
+
 spring:
   application:
     name: workflow-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/careerflow_workflow}
+    username: ${SPRING_DATASOURCE_USERNAME:careerflow}
+    password: ${SPRING_DATASOURCE_PASSWORD:careerflow}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -13,17 +24,23 @@ spring:
     consumer:
       properties:
         spring.json.value.default.type: com.careerflow.common.event.DocumentGeneratedEvent
+
 camunda:
   client:
     mode: self-managed
     zeebe:
       grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
+
 careerflow:
+  internal-api-key: ${CAREERFLOW_INTERNAL_API_KEY:local-internal-key}
+  jwt:
+    secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}
   kafka:
     topics:
       document-generated: ${DOCUMENT_GENERATED_TOPIC:document.generated}
   services:
     ai-generation-url: ${AI_GENERATION_SERVICE_URL:http://localhost:8084}
+
 resilience4j:
   retry:
     instances:
@@ -38,6 +55,7 @@ resilience4j:
         failure-rate-threshold: 70
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 5
+
 management:
   endpoints:
     web:

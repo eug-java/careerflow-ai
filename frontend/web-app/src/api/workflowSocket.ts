@@ -9,9 +9,12 @@ export interface WorkflowStatusMessage {
 }
 
 export function connectWorkflowStatusSocket(
+    processInstanceKey: number,
     onMessage: (message: WorkflowStatusMessage) => void
 ): WebSocket {
-    const socket = new WebSocket(`${wsBaseUrl}/ws/workflows/status`);
+    const socket = new WebSocket(
+        `${wsBaseUrl}/ws/workflows/status?processInstanceKey=${processInstanceKey}`
+    );
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data) as WorkflowStatusMessage;
