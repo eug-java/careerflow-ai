@@ -1,6 +1,7 @@
 package com.careerflow.workflow.controller;
 
 import com.careerflow.common.test.TestAuthSupport;
+import com.careerflow.workflow.dto.WorkflowListItem;
 import com.careerflow.workflow.dto.WorkflowStatus;
 import com.careerflow.workflow.service.WorkflowStatusService;
 import org.junit.jupiter.api.AfterEach;
@@ -9,6 +10,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -41,5 +45,18 @@ class WorkflowControllerTest {
 
         assertThat(actual).isEqualTo(expected);
         verify(workflowStatusService).getStatus(100L);
+    }
+
+    @Test
+    void listWorkflowsDelegatesToService() {
+        List<WorkflowListItem> expected = List.of(
+                new WorkflowListItem(100L, "document-generation-process", "RUNNING", "Started", Instant.now())
+        );
+        when(workflowStatusService.listForCurrentUser(null)).thenReturn(expected);
+
+        List<WorkflowListItem> actual = controller.listWorkflows(null);
+
+        assertThat(actual).isEqualTo(expected);
+        verify(workflowStatusService).listForCurrentUser(null);
     }
 }

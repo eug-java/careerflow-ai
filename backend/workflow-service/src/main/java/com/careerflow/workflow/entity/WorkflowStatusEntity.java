@@ -62,4 +62,8 @@ public class WorkflowStatusEntity {
     public UUID getOwnerId() {
         return ownerId;
     }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }
