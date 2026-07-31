@@ -299,7 +299,7 @@ curl -X POST http://localhost:8080/api/v1/workflows/document-generation \
 ```bash
 PROCESS_INSTANCE_KEY=2251799813685350
 
-curl http://localhost:8080/api/v1/workflows/status/$PROCESS_INSTANCE_KEY \
+curl http://localhost:8080/api/v1/workflows/$PROCESS_INSTANCE_KEY/status \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -415,7 +415,103 @@ curl http://localhost:8086/actuator/health
 
 ---
 
-# 8. Kafka Commands
+## Email Service
+
+```bash
+curl http://localhost:8087/actuator/health
+```
+
+---
+
+# 8. Email API
+
+Configure mailbox, sync inbox, and reply with document attachments.
+
+See full guide: [docs/email/email-integration.md](../email/email-integration.md)
+
+## Save Email Account
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/email/account \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "emailAddress": "you@gmail.com",
+    "imapHost": "imap.gmail.com",
+    "imapPort": 993,
+    "smtpHost": "smtp.gmail.com",
+    "smtpPort": 587,
+    "password": "your-app-password"
+  }'
+```
+
+---
+
+## Test Connection
+
+```bash
+curl -X POST http://localhost:8080/api/v1/email/account/test \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "emailAddress": "you@gmail.com",
+    "imapHost": "imap.gmail.com",
+    "imapPort": 993,
+    "smtpHost": "smtp.gmail.com",
+    "smtpPort": 587,
+    "password": "your-app-password"
+  }'
+```
+
+---
+
+## Sync Inbox
+
+```bash
+curl -X POST http://localhost:8080/api/v1/email/sync \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## Inbox Summary
+
+```bash
+curl http://localhost:8080/api/v1/email/summary \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## List Messages (filter by category)
+
+```bash
+curl "http://localhost:8080/api/v1/email/messages?category=OFFER" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Categories: `OFFER`, `REJECTION`, `VACANCY`, `REVISION_REQUEST`, `OTHER`
+
+---
+
+## Reply with PDF Attachments
+
+```bash
+MESSAGE_ID=YOUR_MESSAGE_ID
+DOCUMENT_ID=YOUR_DOCUMENT_ID
+
+curl -X POST http://localhost:8080/api/v1/email/messages/$MESSAGE_ID/reply \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "documentIds": ["'"$DOCUMENT_ID"'"],
+    "bodyText": "Please find my updated resume attached. Thank you!"
+  }'
+```
+
+---
+
+# 9. Kafka Commands
 
 ## List Topics
 
@@ -438,7 +534,7 @@ docker exec -it careerflow-kafka /opt/kafka/bin/kafka-console-consumer.sh \
 
 ---
 
-# 9. MinIO
+# 10. MinIO
 
 ## Open Console
 
@@ -454,7 +550,7 @@ careerflow-documents
 
 ---
 
-# 10. Frontend
+# 11. Frontend
 
 ## Start Frontend
 

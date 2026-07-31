@@ -91,6 +91,7 @@
         <module>document-service</module>
         <module>workflow-service</module>
         <module>auth-service</module>
+        <module>email-service</module>
     </modules>
 
 </project>

@@ -33,8 +33,11 @@ make up
 export OPENAI_API_KEY=your_openai_api_key_here
 export JWT_SECRET=change-me-change-me-change-me-change-me
 export CAREERFLOW_INTERNAL_API_KEY=local-internal-key
+export CAREERFLOW_EMAIL_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
 export CAREERFLOW_ADMIN_PASSWORD=ChangeMeNow123!
 ```
+
+`CAREERFLOW_EMAIL_ENCRYPTION_KEY` must be exactly 32 characters (encrypts mailbox passwords in email-service).
 
 ## Infrastructure Ports
 
@@ -46,6 +49,7 @@ export CAREERFLOW_ADMIN_PASSWORD=ChangeMeNow123!
 | document-postgres | 5435 |
 | workflow-postgres | 5436 |
 | auth-postgres | 5437 |
+| email-postgres | 5438 |
 | Kafka | 9092 |
 | MinIO API / Console | 9000 / 9001 |
 | Zeebe | 26500 |
@@ -63,8 +67,11 @@ Recommended order:
 5. document-service (8085)
 6. ai-generation-service (8084)
 7. workflow-service (8086)
-8. api-gateway-service (8080)
-9. frontend (5173)
+8. email-service (8087) — requires email-postgres and document-service (for reply attachments)
+9. api-gateway-service (8080)
+10. frontend (5173)
+
+See also: [Email integration](../email/email-integration.md), [Dashboard & UI](../frontend/dashboard.md).
 
 ## Testing
 
@@ -87,6 +94,7 @@ curl http://localhost:8082/actuator/health
 curl http://localhost:8084/actuator/health
 curl http://localhost:8085/actuator/health
 curl http://localhost:8086/actuator/health
+curl http://localhost:8087/actuator/health
 ```
 
 ## Login
@@ -136,6 +144,12 @@ Open http://localhost:9001 and check bucket `careerflow-documents`.
 ```bash
 OPENAI_API_KEY=$OPENAI_API_KEY mvn spring-boot:run
 ```
+
+### Email sync fails
+
+- Set `CAREERFLOW_EMAIL_ENCRYPTION_KEY` (32 chars) in `.env`
+- For Gmail, use an app password and enable IMAP
+- See [docs/email/email-integration.md](../email/email-integration.md)
 
 ### Correlation ID tracing
 

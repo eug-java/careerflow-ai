@@ -43,6 +43,11 @@ spring:
           predicates:
             - Path=/api/v1/workflows/**
 
+        - id: email-service
+          uri: ${EMAIL_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/email/**
+
         - id: workflow-websocket
           uri: ${WORKFLOW_WS_URL:ws://localhost:8086}
           predicates:

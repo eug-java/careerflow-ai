@@ -12,6 +12,8 @@ The system helps users:
 - Generate tailored resumes and cover letters
 - Track async document generation workflows
 - Preview and download generated documents as PDF or DOCX
+- **Dashboard** with KPIs, top matches, activity feed, and smart next actions
+- **Email integration** — sync recruiter inbox, classify messages, reply with PDF attachments
 
 ## 2. Functional Requirements
 
@@ -101,6 +103,13 @@ JWT                         Workflow Service
                          |                 |
                          v                 v
                     PostgreSQL           MinIO
+
+Matching Service (8083) — profile/job match scores
+
+Email Service (8087) — IMAP sync, SMTP reply, inbox classification
+      |
+      v
+PostgreSQL (careerflow_email)
 ```
 
 # 5. Service Responsibilities
@@ -177,6 +186,26 @@ Responsible for:
 - Exporting DOCX
 - Deleting documents from PostgreSQL and MinIO
 
+## matching-service
+
+Responsible for:
+
+- Profile/job match score calculation
+- Skill gap analysis
+- Match history persistence
+
+## email-service
+
+Responsible for:
+
+- Mailbox account CRUD (IMAP/SMTP credentials, encrypted at rest)
+- INBOX sync via IMAP
+- Message classification (OFFER, REJECTION, VACANCY, REVISION_REQUEST, OTHER)
+- SMTP reply with PDF attachments from document-service
+- Inbox summary for dashboard widget
+
+See [docs/email/email-integration.md](../email/email-integration.md).
+
 # 6. Main Document Generation Flow
 
 ```text
@@ -243,22 +272,21 @@ Benefits:
 - Supports WebSocket proxying
 # 11. Security Design
 
-Current MVP:
+Current implementation:
 
-- JWT access token
-- Gateway validates JWT
-- Internal services are not directly secured yet
-- Demo credentials are hardcoded
+- JWT access + refresh tokens (auth-service, PostgreSQL-backed refresh tokens)
+- Gateway validates JWT on protected routes
+- Service-to-service calls secured with `CAREERFLOW_INTERNAL_API_KEY`
+- Per-user resource isolation (`ownerId` from JWT)
+- Mailbox passwords encrypted with AES-256-GCM (`CAREERFLOW_EMAIL_ENCRYPTION_KEY`)
+- WebSocket workflow status requires valid JWT matching workflow owner
 
 Future improvements:
 
-- Refresh tokens
-- Password hashing with BCrypt
-- Database-backed users
 - RBAC roles
-- Service-to-service authentication
-- Token revocation
-- HTTPS
+- Token revocation list
+- HTTPS in production
+- OAuth2 / social login
 # 12. Observability
 
 Current / planned observability:
@@ -268,12 +296,12 @@ Current / planned observability:
 - Prometheus metrics
 - Grafana dashboards
 - Application health checks
+- `X-Correlation-Id` propagation through gateway and services
 
 Future improvements:
 
 - OpenTelemetry tracing
 - Jaeger distributed tracing
-- Correlation IDs
 - Centralized logs
 # 13. Resilience
 
@@ -300,6 +328,8 @@ Used for:
 - Jobs
 - Matching results
 - Document metadata
+- Auth refresh tokens
+- Email accounts and inbox cache
 ### MinIO
 
 Used for:
@@ -316,13 +346,19 @@ Used for:
 The frontend provides:
 
 - Login page
-- Profiles CRUD
-- Jobs CRUD
+- **Dashboard** (Career Command Center) — KPIs, top matches, activity feed, quick actions
+- Profiles CRUD and profile detail with readiness score
+- Jobs CRUD and job detail with match history
+- Match history page
 - AI job parsing
 - Document generation
-- Workflow status tracking
+- Workflow status tracking (WebSocket + polling)
 - Document preview
 - PDF and DOCX downloads
+- **Email inbox** — sync, filter by category, reply with attachments
+- **Email settings** — IMAP/SMTP configuration
+
+See [docs/frontend/dashboard.md](../frontend/dashboard.md).
 # 16. Trade-Offs
    ### Current MVP Uses In-Memory Workflow Status
 
@@ -377,7 +413,6 @@ Production improvement:
    - Real user registration
    - Refresh tokens
    - RBAC
-   - Email tracking integration
    - Resume upload and parsing
    - Vector search and embeddings
    - ATS score improvements
