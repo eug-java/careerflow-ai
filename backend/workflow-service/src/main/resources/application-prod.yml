@@ -1,0 +1,4 @@
+camunda:
+  client:
+    zeebe:
+      use-plaintext: false

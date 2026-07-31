@@ -59,6 +59,18 @@ services:
     volumes:
       - careerflow-workflow-postgres-data:/var/lib/postgresql/data
 
+  auth-postgres:
+    image: postgres:16
+    container_name: careerflow-auth-postgres
+    environment:
+      POSTGRES_DB: careerflow_auth
+      POSTGRES_USER: careerflow
+      POSTGRES_PASSWORD: careerflow
+    ports:
+      - "5437:5432"
+    volumes:
+      - careerflow-auth-postgres-data:/var/lib/postgresql/data
+
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: careerflow-minio
@@ -138,4 +150,5 @@ volumes:
   careerflow-matching-postgres-data:
   careerflow-document-postgres-data:
   careerflow-workflow-postgres-data:
+  careerflow-auth-postgres-data:
   careerflow-minio-data:

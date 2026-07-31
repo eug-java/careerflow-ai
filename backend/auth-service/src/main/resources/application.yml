@@ -5,6 +5,19 @@ spring:
   application:
     name: auth-service
 
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5437/careerflow_auth}
+    username: ${SPRING_DATASOURCE_USERNAME:careerflow}
+    password: ${SPRING_DATASOURCE_PASSWORD:careerflow}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
 careerflow:
   jwt:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}

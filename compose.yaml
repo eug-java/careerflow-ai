@@ -1,0 +1,418 @@
+# CareerFlow AI — full stack (infra + backend + frontend)
+#
+# One command:
+#   docker compose up -d --build
+#
+# Requires: Docker, Docker Compose v2, optional .env with OPENAI_API_KEY
+
+name: careerflow
+
+x-postgres-defaults: &postgres-defaults
+  image: postgres:16
+  restart: unless-stopped
+  environment: &postgres-env
+    POSTGRES_USER: careerflow
+    POSTGRES_PASSWORD: careerflow
+  healthcheck: &postgres-health
+    test: ["CMD-SHELL", "pg_isready -U careerflow"]
+    interval: 10s
+    timeout: 5s
+    retries: 10
+
+x-app-env: &app-env
+  JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me}
+  CAREERFLOW_INTERNAL_API_KEY: ${CAREERFLOW_INTERNAL_API_KEY:-local-internal-key}
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - careerflow
+
+services:
+  # ── Data stores ──────────────────────────────────────────────────────────
+
+  profile-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-profile-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_profile
+    ports:
+      - "5432:5432"
+    volumes:
+      - profile-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_profile"]
+
+  job-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-job-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_job
+    ports:
+      - "5433:5432"
+    volumes:
+      - job-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_job"]
+
+  matching-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-matching-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_matching
+    ports:
+      - "5434:5432"
+    volumes:
+      - matching-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_matching"]
+
+  document-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-document-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_document
+    ports:
+      - "5435:5432"
+    volumes:
+      - document-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_document"]
+
+  workflow-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-workflow-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_workflow
+    ports:
+      - "5436:5432"
+    volumes:
+      - workflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_workflow"]
+
+  auth-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-auth-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_auth
+    ports:
+      - "5437:5432"
+    volumes:
+      - auth-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_auth"]
+
+  kafka:
+    image: apache/kafka:4.1.2
+    container_name: careerflow-kafka
+    restart: unless-stopped
+    networks:
+      - careerflow
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: careerflow-minio
+    restart: unless-stopped
+    networks:
+      - careerflow
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: careerflow
+      MINIO_ROOT_PASSWORD: careerflow123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  zeebe:
+    image: camunda/zeebe:8.5.23
+    container_name: careerflow-zeebe
+    restart: unless-stopped
+    networks:
+      - careerflow
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+    environment:
+      ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED: "false"
+
+  # ── Observability (optional but included) ──────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v3.11.3
+    container_name: careerflow-prometheus
+    restart: unless-stopped
+    networks:
+      - careerflow
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:13.1.0-25893932881
+    container_name: careerflow-grafana
+    restart: unless-stopped
+    networks:
+      - careerflow
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+
+  # ── Backend microservices ──────────────────────────────────────────────────
+
+  auth-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/auth-service/Dockerfile
+    container_name: careerflow-auth-service
+    ports:
+      - "8079:8079"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-postgres:5432/careerflow_auth
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+
+  profile-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/profile-service/Dockerfile
+    container_name: careerflow-profile-service
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://profile-postgres:5432/careerflow_profile
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+    depends_on:
+      profile-postgres:
+        condition: service_healthy
+
+  job-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/job-service/Dockerfile
+    container_name: careerflow-job-service
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://job-postgres:5432/careerflow_job
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+    depends_on:
+      job-postgres:
+        condition: service_healthy
+
+  matching-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/matching-service/Dockerfile
+    container_name: careerflow-matching-service
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://matching-postgres:5432/careerflow_matching
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      PROFILE_SERVICE_URL: http://profile-service:8081
+      JOB_SERVICE_URL: http://job-service:8082
+    depends_on:
+      matching-postgres:
+        condition: service_healthy
+      profile-service:
+        condition: service_started
+      job-service:
+        condition: service_started
+
+  ai-generation-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/ai-generation-service/Dockerfile
+    container_name: careerflow-ai-generation-service
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *app-env
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROFILE_SERVICE_URL: http://profile-service:8081
+      JOB_SERVICE_URL: http://job-service:8082
+      MATCHING_SERVICE_URL: http://matching-service:8083
+      DOCUMENT_SERVICE_URL: http://document-service:8085
+    depends_on:
+      kafka:
+        condition: service_healthy
+      profile-service:
+        condition: service_started
+      job-service:
+        condition: service_started
+
+  document-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/document-service/Dockerfile
+    container_name: careerflow-document-service
+    ports:
+      - "8085:8085"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://document-postgres:5432/careerflow_document
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: careerflow
+      MINIO_SECRET_KEY: careerflow123
+      MINIO_BUCKET: careerflow-documents
+    depends_on:
+      document-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  workflow-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/workflow-service/Dockerfile
+    container_name: careerflow-workflow-service
+    ports:
+      - "8086:8086"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://workflow-postgres:5432/careerflow_workflow
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      AI_GENERATION_SERVICE_URL: http://ai-generation-service:8084
+      ZEEBE_GRPC_ADDRESS: http://zeebe:26500
+    depends_on:
+      workflow-postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      zeebe:
+        condition: service_started
+      ai-generation-service:
+        condition: service_started
+
+  api-gateway-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/api-gateway-service/Dockerfile
+    container_name: careerflow-api-gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *app-env
+      AUTH_SERVICE_URL: http://auth-service:8079
+      PROFILE_SERVICE_URL: http://profile-service:8081
+      JOB_SERVICE_URL: http://job-service:8082
+      MATCHING_SERVICE_URL: http://matching-service:8083
+      AI_GENERATION_SERVICE_URL: http://ai-generation-service:8084
+      DOCUMENT_SERVICE_URL: http://document-service:8085
+      WORKFLOW_SERVICE_URL: http://workflow-service:8086
+      WORKFLOW_WS_URL: ws://workflow-service:8086
+    depends_on:
+      auth-service:
+        condition: service_started
+      profile-service:
+        condition: service_started
+      job-service:
+        condition: service_started
+      matching-service:
+        condition: service_started
+      ai-generation-service:
+        condition: service_started
+      document-service:
+        condition: service_started
+      workflow-service:
+        condition: service_started
+
+  # ── Frontend ───────────────────────────────────────────────────────────────
+
+  frontend:
+    <<: *service-defaults
+    build:
+      context: ./frontend/web-app
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+        VITE_WS_BASE_URL: ws://localhost:8080
+    container_name: careerflow-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      api-gateway-service:
+        condition: service_started
+
+networks:
+  careerflow:
+    name: careerflow-network
+
+volumes:
+  profile-postgres-data:
+  job-postgres-data:
+  matching-postgres-data:
+  document-postgres-data:
+  workflow-postgres-data:
+  auth-postgres-data:
+  minio-data:

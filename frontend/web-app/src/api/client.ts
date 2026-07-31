@@ -1,4 +1,5 @@
 import axios from "axios";
+import { isTokenExpired } from "./tokenUtils";
 
 const apiBaseUrl =
     import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
@@ -10,26 +11,7 @@ export const apiClient = axios.create({
     },
 });
 
-function decodeJwtExpiry(token: string): number | null {
-    try {
-        const payload = token.split(".")[1];
-        const decoded = JSON.parse(atob(payload)) as { exp?: number };
-        return decoded.exp ?? null;
-    } catch {
-        return null;
-    }
-}
-
-export function isTokenExpired(token: string | null): boolean {
-    if (!token) {
-        return true;
-    }
-    const exp = decodeJwtExpiry(token);
-    if (!exp) {
-        return false;
-    }
-    return Date.now() >= exp * 1000;
-}
+export { isTokenExpired } from "./tokenUtils";
 
 apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("accessToken");

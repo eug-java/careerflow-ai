@@ -126,27 +126,64 @@ User downloads PDF or DOCX
 - Docker
 - Node.js 22+
 
-## Start Infrastructure
+## Start Infrastructure (local JVM dev)
 
-```Bash
-docker compose up -d
+```bash
+make infra-up
+# or
+docker compose -f docker-compose.yml up -d
 ```
 
-## Start Backend Services
+Infrastructure includes PostgreSQL (profile `:5432`, job `:5433`, matching `:5434`, document `:5435`, workflow `:5436`, auth `:5437`), Kafka, MinIO, Zeebe, Prometheus, and Grafana.
 
-```Bash
-cd backend/profile-service
-mvn spring-boot:run
+### Full stack in Docker (one command)
+
+```bash
+# copy env and set OPENAI_API_KEY, then:
+docker compose up -d --build
+
+# or
+make up
 ```
-Repeat for all services.
+
+This builds and starts all 8 backend services, frontend, Postgres, Kafka, MinIO, Zeebe, Prometheus, and Grafana.
+
+| URL | Service |
+|-----|---------|
+| http://localhost:5173 | Frontend |
+| http://localhost:8080 | API Gateway |
+| http://localhost:9001 | MinIO Console |
+| http://localhost:3001 | Grafana (admin/admin) |
+| http://localhost:9090 | Prometheus |
+
+Demo login: `demo` / `demo`
+
+Infrastructure only (for local JVM development):
+
+```bash
+make infra-up
+# or: docker compose -f docker-compose.yml up -d
+```
+
+## Start Backend Services (local JVM)
+
+```bash
+make backend-verify   # build + unit/integration tests first
+```
+
+Run each service from its module (auth-service needs `auth-postgres` on port `5437`):
+
+```bash
+cd backend/auth-service && mvn spring-boot:run
+```
+
+Recommended order: auth → profile → job → matching → document → ai-generation → workflow → api-gateway.
 
 ## Start Frontend
 
-```Bash
+```bash
 cd frontend/web-app
-
-npm install
-
+npm ci
 npm run dev
 ```
 
@@ -165,27 +202,60 @@ demo / demo
 Backend uses [JaCoCo](https://www.jacoco.org/) during `mvn verify`. Each module must maintain at least **50% line coverage** (excluding Spring Boot application entrypoints).
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-mvn -f backend/pom.xml clean verify
+make backend-verify
 ```
 
-HTML reports are generated at `backend/<module>/target/site/jacoco/index.html`.
+Integration smoke test (`DocumentPipelineSmokeIT`) uses **Testcontainers** (PostgreSQL + MinIO) in `document-service`.
 
-CI uploads coverage reports as build artifacts and fails if thresholds are not met.
+Frontend unit tests use **Vitest**:
+
+```bash
+make frontend-test
+```
+
+Optional Playwright E2E (requires dev server):
+
+```bash
+cd frontend/web-app && npm run test:e2e
+```
+
+HTML coverage reports: `backend/<module>/target/site/jacoco/index.html`.
+
+CI runs backend verify, frontend lint/test/build, Docker image builds, compose validation, and dependency review on PRs.
+
+## Developer Commands (Makefile)
+
+| Command | Description |
+|---------|-------------|
+| `make infra-up` | Start infrastructure containers |
+| `make backend-verify` | Backend tests + JaCoCo |
+| `make frontend-test` | Frontend Vitest suite |
+| `make frontend-build` | Lint + production build |
+| `make docker-build` | Build core Docker images |
+| `make compose-validate` | Validate compose files |
+
+## Observability
+
+All HTTP requests propagate `X-Correlation-Id` through the API gateway and microservices (MDC logging in servlet services).
 
 ## Environment Configuration
 
-Set environment variables:
+Set environment variables (see `.env.example`):
 
 ```Bash
 export OPENAI_API_KEY=your_key_here
 export JWT_SECRET=change-me-change-me-change-me-change-me
 export CAREERFLOW_INTERNAL_API_KEY=local-internal-key
+export CAREERFLOW_ADMIN_PASSWORD=ChangeMeNow123!
 ```
 
 `JWT_SECRET` must be at least 32 characters and shared across auth-service, api-gateway, and all resource servers.
 
 `CAREERFLOW_INTERNAL_API_KEY` secures service-to-service calls (workflow → ai-generation → profile/job).
+
+Refresh tokens are stored in PostgreSQL (`careerflow_auth` on port `5437`), not in memory.
+
+WebSocket workflow status requires a valid JWT (`token` query param or `Authorization` header) matching the workflow owner.
 
 Refresh an expired access token:
 
