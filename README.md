@@ -27,6 +27,8 @@ Main capabilities:
 - Download documents as PDF or DOCX
 - Track workflow status with WebSocket and polling fallback
 - Protect APIs with JWT authentication
+- **Dashboard** with KPIs, top matches, activity feed, and smart next actions
+- **Email integration** — sync recruiter inbox (IMAP), classify offers/rejections/vacancies, reply with resume/cover letter PDFs (SMTP)
 
 ## Tech Stack
 
@@ -71,6 +73,7 @@ Auth Service                 Profile Service
 Job Service                  Matching Service
 AI Generation Service        Workflow Service
 Document Service
+Email Service
       |
       v
 Kafka
@@ -112,6 +115,7 @@ User downloads PDF or DOCX
 |ai-generation-service	|8084|	AI generation and parsing|
 |document-service	|8085|	Documents, MinIO, PDF/DOCX export|
 |workflow-service	|8086|	Camunda workflow orchestration|
+|email-service	|8087|	IMAP/SMTP recruiter email integration|
 |Kafka	|9092|	Event streaming|
 |MinIO Console	|9001|	Object storage UI|
 |Prometheus	|9090|	Metrics|
@@ -134,7 +138,7 @@ make infra-up
 docker compose -f docker-compose.yml up -d
 ```
 
-Infrastructure includes PostgreSQL (profile `:5432`, job `:5433`, matching `:5434`, document `:5435`, workflow `:5436`, auth `:5437`), Kafka, MinIO, Zeebe, Prometheus, and Grafana.
+Infrastructure includes PostgreSQL (profile `:5432`, job `:5433`, matching `:5434`, document `:5435`, workflow `:5436`, auth `:5437`, email `:5438`), Kafka, MinIO, Zeebe, Prometheus, and Grafana.
 
 ### Full stack in Docker (one command)
 
@@ -146,7 +150,7 @@ docker compose up -d --build
 make up
 ```
 
-This builds and starts all 8 backend services, frontend, Postgres, Kafka, MinIO, Zeebe, Prometheus, and Grafana.
+This builds and starts all 9 backend services, frontend, Postgres, Kafka, MinIO, Zeebe, Prometheus, and Grafana.
 
 | URL | Service |
 |-----|---------|
@@ -177,7 +181,7 @@ Run each service from its module (auth-service needs `auth-postgres` on port `54
 cd backend/auth-service && mvn spring-boot:run
 ```
 
-Recommended order: auth → profile → job → matching → document → ai-generation → workflow → api-gateway.
+Recommended order: auth → profile → job → matching → document → ai-generation → workflow → email → api-gateway.
 
 ## Start Frontend
 
@@ -227,6 +231,8 @@ CI runs backend verify, frontend lint/test/build, Docker image builds, compose v
 
 | Command | Description |
 |---------|-------------|
+| `make up` | Build and start full stack |
+| `make down` | Stop full stack |
 | `make infra-up` | Start infrastructure containers |
 | `make backend-verify` | Backend tests + JaCoCo |
 | `make frontend-test` | Frontend Vitest suite |
@@ -246,8 +252,11 @@ Set environment variables (see `.env.example`):
 export OPENAI_API_KEY=your_key_here
 export JWT_SECRET=change-me-change-me-change-me-change-me
 export CAREERFLOW_INTERNAL_API_KEY=local-internal-key
+export CAREERFLOW_EMAIL_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
 export CAREERFLOW_ADMIN_PASSWORD=ChangeMeNow123!
 ```
+
+`CAREERFLOW_EMAIL_ENCRYPTION_KEY` must be exactly 32 characters — used to encrypt mailbox passwords in `email-service`.
 
 `JWT_SECRET` must be at least 32 characters and shared across auth-service, api-gateway, and all resource servers.
 
@@ -347,8 +356,17 @@ Swagger UI is available at:
 | ai-generation-service | http://localhost:8084/swagger-ui.html |
 | document-service | http://localhost:8085/swagger-ui.html |
 | workflow-service | http://localhost:8086/swagger-ui.html |
+| email-service | http://localhost:8087/swagger-ui.html |
 
-## Learning Goals
+## Documentation
+
+| Topic | Path |
+|-------|------|
+| Local development | [docs/runbook/local-development.md](docs/runbook/local-development.md) |
+| Dashboard & UI pages | [docs/frontend/dashboard.md](docs/frontend/dashboard.md) |
+| Email integration | [docs/email/email-integration.md](docs/email/email-integration.md) |
+| API examples | [docs/api/api-examples.md](docs/api/api-examples.md) |
+| System overview | [docs/architecture/system-overview.md](docs/architecture/system-overview.md) |
 
 This project was built to demonstrate:
 

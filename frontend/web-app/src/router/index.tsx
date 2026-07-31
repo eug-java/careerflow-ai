@@ -9,6 +9,8 @@ import JobsPage from "../pages/JobsPage";
 import JobDetailPage from "../pages/JobDetailPage";
 import MatchHistoryPage from "../pages/MatchHistoryPage";
 import DocumentsPage from "../pages/DocumentsPage";
+import EmailInboxPage from "../pages/EmailInboxPage";
+import EmailSettingsPage from "../pages/EmailSettingsPage";
 import ProtectedRoute from "./ProtectedRoute";
 import CreateJobPage from "../pages/CreateJobPage";
 import EditProfilePage from "../pages/EditProfilePage";
@@ -104,6 +106,22 @@ export const router = createBrowserRouter([
         element: (
             <ProtectedRoute>
                 <DocumentsPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/email",
+        element: (
+            <ProtectedRoute>
+                <EmailInboxPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/email/settings",
+        element: (
+            <ProtectedRoute>
+                <EmailSettingsPage />
             </ProtectedRoute>
         ),
     },

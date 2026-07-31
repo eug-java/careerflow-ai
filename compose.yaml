@@ -22,6 +22,7 @@ x-postgres-defaults: &postgres-defaults
 x-app-env: &app-env
   JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me}
   CAREERFLOW_INTERNAL_API_KEY: ${CAREERFLOW_INTERNAL_API_KEY:-local-internal-key}
+  CAREERFLOW_EMAIL_ENCRYPTION_KEY: ${CAREERFLOW_EMAIL_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef}
 
 x-service-defaults: &service-defaults
   restart: unless-stopped
@@ -114,6 +115,20 @@ services:
     healthcheck:
       <<: *postgres-health
       test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_auth"]
+
+  email-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-email-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_email
+    ports:
+      - "5438:5432"
+    volumes:
+      - email-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_email"]
 
   kafka:
     image: apache/kafka:4.1.2
@@ -354,6 +369,26 @@ services:
       ai-generation-service:
         condition: service_started
 
+  email-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: backend/email-service/Dockerfile
+    container_name: careerflow-email-service
+    ports:
+      - "8087:8087"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://email-postgres:5432/careerflow_email
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+      DOCUMENT_SERVICE_URL: http://document-service:8085
+    depends_on:
+      email-postgres:
+        condition: service_healthy
+      document-service:
+        condition: service_started
+
   api-gateway-service:
     <<: *service-defaults
     build:
@@ -372,6 +407,7 @@ services:
       DOCUMENT_SERVICE_URL: http://document-service:8085
       WORKFLOW_SERVICE_URL: http://workflow-service:8086
       WORKFLOW_WS_URL: ws://workflow-service:8086
+      EMAIL_SERVICE_URL: http://email-service:8087
     depends_on:
       auth-service:
         condition: service_started
@@ -386,6 +422,8 @@ services:
       document-service:
         condition: service_started
       workflow-service:
+        condition: service_started
+      email-service:
         condition: service_started
 
   # ── Frontend ───────────────────────────────────────────────────────────────
@@ -415,4 +453,5 @@ volumes:
   document-postgres-data:
   workflow-postgres-data:
   auth-postgres-data:
+  email-postgres-data:
   minio-data:

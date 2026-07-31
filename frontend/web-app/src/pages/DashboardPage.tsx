@@ -21,6 +21,7 @@ import AppLayout from "../layouts/AppLayout";
 import { QuickActionsPanel } from "../components/dashboard/QuickActionsPanel";
 import { DocumentsSnapshot } from "../components/dashboard/DocumentsSnapshot";
 import { MatchDistributionChart } from "../components/dashboard/MatchDistributionChart";
+import { EmailSnapshot } from "../components/dashboard/EmailSnapshot";
 
 export default function DashboardPage() {
     const { profiles, jobs, matches, documents, workflows, isLoading, isError } =
@@ -247,6 +248,8 @@ export default function DashboardPage() {
                 profiles={profiles}
                 jobs={jobs}
             />
+
+            <EmailSnapshot />
 
             {primaryProfile && readiness.checks.some((check) => !check.done) && (
                 <Card className="mt-8">
