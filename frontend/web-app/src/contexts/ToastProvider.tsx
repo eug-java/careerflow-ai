@@ -1,20 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-
-export interface ToastMessage {
-    id: number;
-    type: "success" | "error" | "info";
-    text: string;
-}
-
-interface ToastContextValue {
-    toasts: ToastMessage[];
-    pushToast: (type: ToastMessage["type"], text: string) => void;
-    dismissToast: (id: number) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
-
-let toastCounter = 0;
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+    nextToastId,
+    ToastContext,
+    type ToastMessage,
+} from "./toast-context";
 
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -25,7 +14,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
     const pushToast = useCallback(
         (type: ToastMessage["type"], text: string) => {
-            const id = ++toastCounter;
+            const id = nextToastId();
             setToasts((current) => [...current, { id, type, text }]);
             window.setTimeout(() => dismissToast(id), 4000);
         },
@@ -58,12 +47,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             </div>
         </ToastContext.Provider>
     );
-}
-
-export function useToast() {
-    const context = useContext(ToastContext);
-    if (!context) {
-        throw new Error("useToast must be used within ToastProvider");
-    }
-    return context;
 }

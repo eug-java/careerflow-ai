@@ -12,8 +12,8 @@ import { Badge, Card, EmptyState, LoadingGrid, ScoreBar } from "../components/ui
 import { calculateMatch } from "../api/matchingApi";
 import { startDocumentGenerationWorkflow } from "../api/workflowApi";
 import { computeSkillGap } from "../lib/dashboardUtils";
-import { useEffect, useState } from "react";
-import { useToast } from "../contexts/ToastContext";
+import { useState } from "react";
+import { useToast } from "../hooks/useToast";
 
 export default function JobDetailPage() {
     const { id = "" } = useParams();
@@ -37,12 +37,7 @@ export default function JobDetailPage() {
     const matches = matchesQuery.data ?? [];
     const documents = documentsQuery.data ?? [];
     const workflows = workflowsQuery.data ?? [];
-
-    useEffect(() => {
-        if (!selectedProfileId && profiles[0]) {
-            setSelectedProfileId(profiles[0].id);
-        }
-    }, [profiles, selectedProfileId]);
+    const activeProfileId = selectedProfileId || profiles[0]?.id || "";
 
     if (jobQuery.isLoading) {
         return (
@@ -66,21 +61,21 @@ export default function JobDetailPage() {
     }
 
     const job = jobQuery.data;
-    const profile = profiles.find((item) => item.id === selectedProfileId);
+    const profile = profiles.find((item) => item.id === activeProfileId);
     const gap = computeSkillGap(profile, job);
     const jobMatches = [...matches].sort(
         (a, b) => Number(b.totalScore) - Number(a.totalScore)
     );
 
     async function handleMatch() {
-        if (!selectedProfileId) {
+        if (!activeProfileId) {
             pushToast("error", "Select a profile first.");
             return;
         }
 
         setBusy("match");
         try {
-            const result = await calculateMatch(selectedProfileId, id);
+            const result = await calculateMatch(activeProfileId, id);
             await queryClient.invalidateQueries({ queryKey: ["matches"] });
             pushToast("success", `Match: ${Number(result.totalScore).toFixed(0)}%`);
         } catch (error) {
@@ -91,7 +86,7 @@ export default function JobDetailPage() {
     }
 
     async function handleGenerate(documentType: "COVER_LETTER" | "RESUME") {
-        if (!selectedProfileId) {
+        if (!activeProfileId) {
             pushToast("error", "Select a profile first.");
             return;
         }
@@ -99,7 +94,7 @@ export default function JobDetailPage() {
         setBusy(documentType);
         try {
             await startDocumentGenerationWorkflow({
-                profileId: selectedProfileId,
+                profileId: activeProfileId,
                 jobId: id,
                 documentType,
             });
@@ -157,7 +152,7 @@ export default function JobDetailPage() {
                     <h2 className="text-xl font-semibold mb-4">Actions</h2>
                     <label className="text-sm text-slate-600 block mb-2">Profile</label>
                     <select
-                        value={selectedProfileId}
+                        value={activeProfileId}
                         onChange={(event) => setSelectedProfileId(event.target.value)}
                         className="w-full border border-slate-300 rounded-xl px-3 py-2 mb-4"
                     >

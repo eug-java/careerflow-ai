@@ -10,7 +10,7 @@ import {
 import { useDocumentsQuery, useJobsQuery, useProfilesQuery } from "../hooks/useDashboardQueries";
 import { Badge, EmptyState, LoadingGrid } from "../components/ui/Card";
 import { formatRelativeTime } from "../lib/dashboardUtils";
-import { useToast } from "../contexts/ToastContext";
+import { useToast } from "../hooks/useToast";
 
 export default function DocumentsPage() {
     const [profileFilter, setProfileFilter] = useState("");

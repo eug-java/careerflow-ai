@@ -7,7 +7,7 @@ import type { Job } from "../../api/jobApi";
 import type { Profile } from "../../api/profileApi";
 import { startDocumentGenerationWorkflow } from "../../api/workflowApi";
 import { Card } from "../ui/Card";
-import { useToast } from "../../contexts/ToastContext";
+import { useToast } from "../../hooks/useToast";
 
 interface Props {
     profiles: Profile[];

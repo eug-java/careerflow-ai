@@ -6,7 +6,7 @@ import { RouterProvider } from "react-router-dom";
 import "./index.css";
 import { router } from "./router";
 import { queryClient } from "./lib/queryClient";
-import { ToastProvider } from "./contexts/ToastContext";
+import { ToastProvider } from "./contexts/ToastProvider";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
