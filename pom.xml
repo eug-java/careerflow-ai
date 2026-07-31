@@ -21,7 +21,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-ai.version>1.1.5</spring-ai.version>
-        <spring-cloud.version>2024.0.1</spring-cloud.version>
+        <spring-cloud.version>2025.1.2</spring-cloud.version>
     </properties>
     <parent>
         <groupId>org.springframework.boot</groupId>
