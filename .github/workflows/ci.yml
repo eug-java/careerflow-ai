@@ -35,7 +35,7 @@ jobs:
           if-no-files-found: ignore
 
   frontend:
-    name: Frontend Lint & Build
+    name: Frontend Lint, Test & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -57,9 +57,29 @@ jobs:
         run: npm run lint
         working-directory: frontend/web-app
 
+      - name: Unit tests
+        run: npm run test
+        working-directory: frontend/web-app
+
       - name: Build
         run: npm run build
         working-directory: frontend/web-app
+
+  docker-build:
+    name: Docker Image Build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - auth-service
+          - profile-service
+          - document-service
+          - api-gateway-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.service }} image
+        run: docker build -f backend/${{ matrix.service }}/Dockerfile .
 
   docker-compose:
     name: Validate Docker Compose
@@ -69,4 +89,13 @@ jobs:
       - name: Validate compose files
         run: |
           docker compose -f docker-compose.yml config >/dev/null
+          docker compose -f compose.yaml config >/dev/null
           docker compose -f docker-compose.full.yml config >/dev/null
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4

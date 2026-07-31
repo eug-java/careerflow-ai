@@ -1,0 +1,3 @@
+com.careerflow.common.security.CareerflowSecurityAutoConfiguration
+com.careerflow.common.api.CareerflowApiAutoConfiguration
+com.careerflow.common.observability.CareerflowObservabilityAutoConfiguration

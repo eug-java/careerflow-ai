@@ -14,14 +14,20 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
     private final WorkflowStatusWebSocketHandler handler;
+    private final WorkflowWebSocketAuthInterceptor authInterceptor;
 
-    public WebSocketConfig(WorkflowStatusWebSocketHandler handler) {
+    public WebSocketConfig(
+            WorkflowStatusWebSocketHandler handler,
+            WorkflowWebSocketAuthInterceptor authInterceptor
+    ) {
         this.handler = handler;
+        this.authInterceptor = authInterceptor;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(handler, "/ws/workflows/status")
+                .addInterceptors(authInterceptor)
                 .setAllowedOriginPatterns("http://localhost:5173", "http://localhost:5174", "http://localhost:3000");
     }
 }

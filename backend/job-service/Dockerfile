@@ -4,15 +4,14 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn clean package -DskipTests
+RUN mvn -B -ntp -f backend/pom.xml clean package -DskipTests -pl :job-service -am
 
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY backend/job-service/target/*-exec.jar app.jar
-COPY infra/otel/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
+COPY --from=build /app/backend/job-service/target/*-exec.jar app.jar
 
-EXPOSE 8081
+EXPOSE 8082
 
-ENTRYPOINT ["java", "-javaagent:/otel/opentelemetry-javaagent.jar", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

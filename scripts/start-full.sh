@@ -8,4 +8,4 @@ cd "$PROJECT_ROOT"
 
 echo "Project root: $PROJECT_ROOT"
 
-docker compose -f docker-compose.full.yml up --build
+docker compose up -d --build
