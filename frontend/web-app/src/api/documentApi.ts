@@ -12,8 +12,17 @@ export interface GeneratedDocument {
     createdAt: string;
 }
 
-export async function fetchDocuments(): Promise<GeneratedDocument[]> {
-    const response = await apiClient.get("/api/v1/documents");
+export interface FetchDocumentsParams {
+    profileId?: string;
+    jobId?: string;
+}
+
+export async function fetchDocuments(
+    params: FetchDocumentsParams = {}
+): Promise<GeneratedDocument[]> {
+    const response = await apiClient.get<GeneratedDocument[]>("/api/v1/documents", {
+        params,
+    });
     return response.data;
 }
 

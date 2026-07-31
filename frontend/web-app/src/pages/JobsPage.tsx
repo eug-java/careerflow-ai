@@ -1,50 +1,28 @@
-import { useEffect, useState } from "react";
-import AppLayout from "../layouts/AppLayout";
-
-import { deleteJob, fetchJobs } from "../api/jobApi";
-import type { Job } from "../api/jobApi";
-
-import { fetchProfiles } from "../api/profileApi";
-import type { Profile } from "../api/profileApi";
-
+import { useState } from "react";
 import { Link } from "react-router-dom";
-
-import {
-    startDocumentGenerationWorkflow,
-    fetchWorkflowStatus,
-} from "../api/workflowApi";
-
+import { useQueryClient } from "@tanstack/react-query";
+import AppLayout from "../layouts/AppLayout";
+import { deleteJob } from "../api/jobApi";
+import { calculateMatch } from "../api/matchingApi";
+import { startDocumentGenerationWorkflow } from "../api/workflowApi";
 import { connectWorkflowStatusSocket } from "../api/workflowSocket";
-import { calculateMatch, type MatchResult } from "../api/matchingApi";
+import { useJobsQuery, useProfilesQuery, useMatchesQuery } from "../hooks/useDashboardQueries";
+import { Badge, EmptyState, LoadingGrid, ScoreBar } from "../components/ui/Card";
+import { useToast } from "../hooks/useToast";
+import { useEffect } from "react";
 
 export default function JobsPage() {
-    const [jobs, setJobs] = useState<Job[]>([]);
-    const [profiles, setProfiles] = useState<Profile[]>([]);
+    const { data: jobs = [], isLoading: jobsLoading } = useJobsQuery();
+    const { data: profiles = [], isLoading: profilesLoading } = useProfilesQuery();
+    const { data: matches = [] } = useMatchesQuery();
+    const queryClient = useQueryClient();
+    const { pushToast } = useToast();
 
-    const [selectedProfileId, setSelectedProfileId] = useState<string>("");
-
-    const [message, setMessage] = useState<string>("");
-    const [error, setError] = useState<string>("");
+    const [selectedProfileId, setSelectedProfileId] = useState("");
     const [workflowStatus, setWorkflowStatus] = useState<string>("");
-    const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
+    const [currentProcessInstanceKey, setCurrentProcessInstanceKey] = useState<number | null>(null);
 
-    const [currentProcessInstanceKey, setCurrentProcessInstanceKey] =
-        useState<number | null>(null);
-
-    useEffect(() => {
-        fetchJobs()
-            .then(setJobs)
-            .catch((err: Error) => setError(err.message));
-
-        fetchProfiles()
-            .then((data) => {
-                setProfiles(data);
-                if (data.length > 0) {
-                    setSelectedProfileId(data[0].id);
-                }
-            })
-            .catch((err: Error) => setError(err.message));
-    }, []);
+    const activeProfileId = selectedProfileId || profiles[0]?.id || "";
 
     useEffect(() => {
         if (!currentProcessInstanceKey) {
@@ -53,130 +31,102 @@ export default function JobsPage() {
 
         const socket = connectWorkflowStatusSocket(currentProcessInstanceKey, (statusMessage) => {
             setWorkflowStatus(statusMessage.status);
+            if (statusMessage.status === "COMPLETED") {
+                pushToast("success", "Document generation completed.");
+                void queryClient.invalidateQueries({ queryKey: ["documents"] });
+                void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+            }
+            if (statusMessage.status === "FAILED") {
+                pushToast("error", statusMessage.message || "Workflow failed.");
+            }
         });
 
         return () => {
             socket.close();
         };
-    }, [currentProcessInstanceKey]);
+    }, [currentProcessInstanceKey, pushToast, queryClient]);
+
+    function getMatchForJob(jobId: string) {
+        if (!activeProfileId) {
+            return undefined;
+        }
+        return matches.find(
+            (match) => match.jobId === jobId && match.profileId === activeProfileId
+        );
+    }
 
     async function handleDeleteJob(jobId: string) {
         const confirmed = window.confirm("Delete this job?");
-
         if (!confirmed) {
             return;
         }
-
-        try {
-            await deleteJob(jobId);
-            setJobs((current) => current.filter((job) => job.id !== jobId));
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to delete job");
-        }
+        await deleteJob(jobId);
+        await queryClient.invalidateQueries({ queryKey: ["jobs"] });
     }
 
     async function handleMatch(jobId: string) {
-        if (!selectedProfileId) {
-            setError("Please select a profile first.");
+        if (!activeProfileId) {
+            pushToast("error", "Please select a profile first.");
             return;
         }
-
         try {
-            setError("");
-            const result = await calculateMatch(selectedProfileId, jobId);
-            setMatchResult(result);
+            const result = await calculateMatch(activeProfileId, jobId);
+            await queryClient.invalidateQueries({ queryKey: ["matches"] });
+            pushToast("success", `Match: ${Number(result.totalScore).toFixed(0)}%`);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Match calculation failed");
+            pushToast("error", err instanceof Error ? err.message : "Match failed");
         }
     }
 
-    async function handleGenerate(
-        jobId: string,
-        documentType: "COVER_LETTER" | "RESUME"
-    ) {
-        if (!selectedProfileId) {
-            setError("Please select a profile first.");
+    async function handleGenerate(jobId: string, documentType: "COVER_LETTER" | "RESUME") {
+        if (!activeProfileId) {
+            pushToast("error", "Please select a profile first.");
             return;
         }
-
         try {
-            setError("");
             const workflow = await startDocumentGenerationWorkflow({
-                profileId: selectedProfileId,
+                profileId: activeProfileId,
                 jobId,
                 documentType,
             });
-
-            const processInstanceKey = workflow.processInstanceKey;
-
-            setCurrentProcessInstanceKey(processInstanceKey);
-            setMessage(`Workflow started: ${processInstanceKey}`);
+            setCurrentProcessInstanceKey(workflow.processInstanceKey);
             setWorkflowStatus("RUNNING");
-
-            const interval = setInterval(async () => {
-                try {
-                    const status = await fetchWorkflowStatus(processInstanceKey);
-                    setWorkflowStatus(status.status);
-
-                    if (status.status === "COMPLETED" || status.status === "FAILED") {
-                        clearInterval(interval);
-                    }
-                } catch (pollError) {
-                    console.error(pollError);
-                    clearInterval(interval);
-                }
-            }, 2000);
+            await queryClient.invalidateQueries({ queryKey: ["workflows"] });
+            pushToast("info", "Document generation started.");
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Workflow start failed");
+            pushToast("error", err instanceof Error ? err.message : "Workflow failed");
         }
     }
+
+    const isLoading = jobsLoading || profilesLoading;
 
     return (
         <AppLayout>
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-4xl font-bold">Jobs</h1>
-
-                <div className="flex flex-col gap-3 items-end">
-                    <Link
-                        to="/jobs/new"
-                        className="bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700"
-                    >
-                        Add Job
-                    </Link>
-
-                    {message && (
-                        <div className="bg-green-100 text-green-800 px-4 py-2 rounded-xl">
-                            {message}
-                        </div>
-                    )}
-
-                    {error && (
-                        <div className="bg-red-100 text-red-800 px-4 py-2 rounded-xl">
-                            {error}
-                        </div>
-                    )}
-
-                    {workflowStatus && (
-                        <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-xl">
-                            Workflow Status: {workflowStatus}
-                        </div>
-                    )}
-
-                    {matchResult && (
-                        <div className="bg-purple-100 text-purple-900 px-4 py-2 rounded-xl max-w-md text-sm">
-                            Match score: {matchResult.totalScore}% — {matchResult.explanation}
-                        </div>
-                    )}
+                <div>
+                    <h1 className="text-4xl font-bold">Jobs</h1>
+                    <p className="text-slate-500 mt-2">Track vacancies, calculate matches, and generate documents.</p>
                 </div>
+                <Link
+                    to="/jobs/new"
+                    className="bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700"
+                >
+                    Add Job
+                </Link>
             </div>
+
+            {workflowStatus && (
+                <div className="mb-6 bg-blue-50 text-blue-800 px-4 py-3 rounded-xl">
+                    Workflow status: {workflowStatus}
+                </div>
+            )}
 
             <div className="mb-6 bg-white rounded-2xl shadow p-6">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Select profile for document generation
+                    Active profile for matching & generation
                 </label>
-
                 <select
-                    value={selectedProfileId}
+                    value={activeProfileId}
                     onChange={(event) => setSelectedProfileId(event.target.value)}
                     className="w-full border border-slate-300 rounded-xl px-4 py-2"
                 >
@@ -188,65 +138,92 @@ export default function JobsPage() {
                 </select>
             </div>
 
-            <div className="grid gap-6">
-                {jobs.map((job) => (
-                    <div key={job.id} className="bg-white rounded-2xl shadow p-6">
-                        <div className="flex justify-between gap-6">
-                            <div>
-                                <h2 className="text-2xl font-semibold">{job.title}</h2>
-
-                                <p className="text-slate-500">
-                                    {job.companyName} · {job.location}
-                                </p>
-
-                                <p className="mt-4 text-slate-700">{job.description}</p>
-
-                                <p className="mt-4 text-sm text-slate-500">
-                                    {job.employmentType} · {job.currency} {job.salaryMin} -{" "}
-                                    {job.salaryMax}
-                                </p>
+            {isLoading ? (
+                <LoadingGrid count={3} />
+            ) : jobs.length === 0 ? (
+                <EmptyState
+                    title="No jobs yet"
+                    description="Add a job manually or paste a description on the dashboard."
+                    actionLabel="Add job"
+                    actionHref="/jobs/new"
+                />
+            ) : (
+                <div className="grid gap-6">
+                    {jobs.map((job) => {
+                        const match = getMatchForJob(job.id);
+                        return (
+                            <div key={job.id} className="bg-white rounded-2xl shadow p-6">
+                                <div className="flex flex-col lg:flex-row lg:justify-between gap-6">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3">
+                                            <Link
+                                                to={`/jobs/${job.id}`}
+                                                className="text-2xl font-semibold hover:text-indigo-600"
+                                            >
+                                                {job.title}
+                                            </Link>
+                                            {match && (
+                                                <Badge tone={Number(match.totalScore) >= 70 ? "success" : "warning"}>
+                                                    {Number(match.totalScore).toFixed(0)}% match
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-slate-500">
+                                            {job.companyName} · {job.location}
+                                        </p>
+                                        <p className="mt-4 text-slate-700 line-clamp-3">{job.description}</p>
+                                        {match && (
+                                            <div className="grid md:grid-cols-3 gap-3 mt-4 max-w-xl">
+                                                <ScoreBar label="Skills" score={Number(match.skillsScore)} />
+                                                <ScoreBar label="Location" score={Number(match.locationScore)} />
+                                                <ScoreBar label="Salary" score={Number(match.salaryScore)} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col gap-2 min-w-48">
+                                        <button
+                                            onClick={() => handleMatch(job.id)}
+                                            className="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-500"
+                                        >
+                                            Calculate match
+                                        </button>
+                                        <button
+                                            onClick={() => handleGenerate(job.id, "COVER_LETTER")}
+                                            className="bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700"
+                                        >
+                                            Cover letter
+                                        </button>
+                                        <button
+                                            onClick={() => handleGenerate(job.id, "RESUME")}
+                                            className="border border-slate-300 px-4 py-2 rounded-xl hover:bg-slate-50"
+                                        >
+                                            Resume
+                                        </button>
+                                        <Link
+                                            to={`/jobs/${job.id}`}
+                                            className="text-center border border-slate-300 px-4 py-2 rounded-xl hover:bg-slate-50"
+                                        >
+                                            Details
+                                        </Link>
+                                        <Link
+                                            to={`/jobs/${job.id}/edit`}
+                                            className="text-center border border-slate-300 px-4 py-2 rounded-xl hover:bg-slate-50"
+                                        >
+                                            Edit
+                                        </Link>
+                                        <button
+                                            onClick={() => handleDeleteJob(job.id)}
+                                            className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-500"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-
-                            <div className="flex flex-col gap-3 min-w-48">
-                                <button
-                                    onClick={() => handleMatch(job.id)}
-                                    className="bg-purple-700 text-white px-4 py-2 rounded-xl hover:bg-purple-600"
-                                >
-                                    Calculate Match
-                                </button>
-
-                                <button
-                                    onClick={() => handleGenerate(job.id, "COVER_LETTER")}
-                                    className="bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700"
-                                >
-                                    Generate Cover Letter
-                                </button>
-
-                                <button
-                                    onClick={() => handleGenerate(job.id, "RESUME")}
-                                    className="bg-white border border-slate-300 px-4 py-2 rounded-xl hover:bg-slate-100"
-                                >
-                                    Generate Resume
-                                </button>
-
-                                <Link
-                                    to={`/jobs/${job.id}/edit`}
-                                    className="bg-white border border-slate-300 px-4 py-2 rounded-xl hover:bg-slate-100 text-center"
-                                >
-                                    Edit Job
-                                </Link>
-
-                                <button
-                                    onClick={() => handleDeleteJob(job.id)}
-                                    className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-500"
-                                >
-                                    Delete Job
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
         </AppLayout>
     );
 }

@@ -16,7 +16,7 @@ export default function LoginPage() {
         try {
             const result = await login(username, password);
             storeAuthTokens(result);
-            navigate("/profiles");
+            navigate("/");
         } catch {
             setError("Invalid username or password.");
         }

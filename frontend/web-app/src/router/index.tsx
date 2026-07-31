@@ -1,9 +1,13 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import LoginPage from "../pages/LoginPage";
+import DashboardPage from "../pages/DashboardPage";
 import ProfilesPage from "../pages/ProfilesPage";
+import ProfileDetailPage from "../pages/ProfileDetailPage";
 import CreateProfilePage from "../pages/CreateProfilePage";
 import JobsPage from "../pages/JobsPage";
+import JobDetailPage from "../pages/JobDetailPage";
+import MatchHistoryPage from "../pages/MatchHistoryPage";
 import DocumentsPage from "../pages/DocumentsPage";
 import ProtectedRoute from "./ProtectedRoute";
 import CreateJobPage from "../pages/CreateJobPage";
@@ -19,7 +23,7 @@ export const router = createBrowserRouter([
         path: "/",
         element: (
             <ProtectedRoute>
-                <ProfilesPage />
+                <DashboardPage />
             </ProtectedRoute>
         ),
     },
@@ -40,18 +44,26 @@ export const router = createBrowserRouter([
         ),
     },
     {
-        path: "/jobs",
+        path: "/profiles/:id/edit",
         element: (
             <ProtectedRoute>
-                <JobsPage />
+                <EditProfilePage />
             </ProtectedRoute>
         ),
     },
     {
-        path: "/documents",
+        path: "/profiles/:id",
         element: (
             <ProtectedRoute>
-                <DocumentsPage />
+                <ProfileDetailPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/jobs",
+        element: (
+            <ProtectedRoute>
+                <JobsPage />
             </ProtectedRoute>
         ),
     },
@@ -64,18 +76,34 @@ export const router = createBrowserRouter([
         ),
     },
     {
-        path: "/profiles/:id/edit",
-        element: (
-            <ProtectedRoute>
-                <EditProfilePage />
-            </ProtectedRoute>
-        ),
-    },
-    {
         path: "/jobs/:id/edit",
         element: (
             <ProtectedRoute>
                 <EditJobPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/jobs/:id",
+        element: (
+            <ProtectedRoute>
+                <JobDetailPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/matches",
+        element: (
+            <ProtectedRoute>
+                <MatchHistoryPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/documents",
+        element: (
+            <ProtectedRoute>
+                <DocumentsPage />
             </ProtectedRoute>
         ),
     },

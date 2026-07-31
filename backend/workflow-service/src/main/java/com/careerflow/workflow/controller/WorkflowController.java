@@ -3,6 +3,7 @@ package com.careerflow.workflow.controller;
 import com.careerflow.common.security.CurrentUserProvider;
 import com.careerflow.workflow.dto.StartDocumentGenerationWorkflowRequest;
 import com.careerflow.workflow.dto.StartWorkflowResponse;
+import com.careerflow.workflow.dto.WorkflowListItem;
 import com.careerflow.workflow.dto.WorkflowStatus;
 import com.careerflow.workflow.service.WorkflowStatusService;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -10,6 +11,7 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,6 +44,11 @@ public class WorkflowController {
 
         workflowStatusService.markStarted(event.getProcessInstanceKey(), DOCUMENT_GENERATION_PROCESS_ID, ownerId);
         return new StartWorkflowResponse(event.getProcessInstanceKey(), event.getBpmnProcessId());
+    }
+
+    @GetMapping
+    public List<WorkflowListItem> listWorkflows(@RequestParam(required = false) String status) {
+        return workflowStatusService.listForCurrentUser(status);
     }
 
     @GetMapping("/{processInstanceKey}/status")

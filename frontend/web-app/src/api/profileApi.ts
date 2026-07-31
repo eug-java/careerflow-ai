@@ -1,5 +1,23 @@
 import { apiClient } from "./client";
 
+export interface Skill {
+    id?: string;
+    name: string;
+    category?: string;
+    yearsOfExperience?: number;
+}
+
+export interface Experience {
+    id?: string;
+    companyName: string;
+    positionTitle: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    currentPosition?: boolean;
+    description?: string;
+}
+
 export interface Profile {
     id: string;
     fullName: string;
@@ -8,6 +26,10 @@ export interface Profile {
     phone?: string;
     location: string;
     summary: string;
+    skills?: Skill[];
+    experiences?: Experience[];
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface CreateProfileRequest {
@@ -17,6 +39,8 @@ export interface CreateProfileRequest {
     phone: string;
     location: string;
     summary: string;
+    skills?: Skill[];
+    experiences?: Experience[];
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {

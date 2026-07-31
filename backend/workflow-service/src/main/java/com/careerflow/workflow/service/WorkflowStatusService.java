@@ -4,6 +4,7 @@ import com.careerflow.common.api.ForbiddenException;
 import com.careerflow.common.api.ResourceNotFoundException;
 import com.careerflow.common.security.CurrentUserProvider;
 import com.careerflow.common.security.InternalAuthSupport;
+import com.careerflow.workflow.dto.WorkflowListItem;
 import com.careerflow.workflow.dto.WorkflowStatus;
 import com.careerflow.workflow.entity.WorkflowStatusEntity;
 import com.careerflow.workflow.repository.WorkflowStatusRepository;
@@ -11,6 +12,7 @@ import com.careerflow.workflow.websocket.WorkflowStatusWebSocketHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -46,6 +48,15 @@ public class WorkflowStatusService {
     }
 
     @Transactional(readOnly = true)
+    public List<WorkflowListItem> listForCurrentUser(String status) {
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        List<WorkflowStatusEntity> entities = status == null || status.isBlank()
+                ? repository.findByOwnerIdOrderByUpdatedAtDesc(ownerId)
+                : repository.findByOwnerIdAndStatusOrderByUpdatedAtDesc(ownerId, status);
+        return entities.stream().map(this::toListItem).toList();
+    }
+
+    @Transactional(readOnly = true)
     public WorkflowStatus getStatus(long processInstanceKey) {
         WorkflowStatusEntity entity = requireEntity(processInstanceKey);
         if (!InternalAuthSupport.isInternalCall()) {
@@ -64,6 +75,16 @@ public class WorkflowStatusService {
 
     private WorkflowStatus toDto(WorkflowStatusEntity entity) {
         return new WorkflowStatus(entity.getProcessInstanceKey(), entity.getProcessId(), entity.getStatus(), entity.getMessage());
+    }
+
+    private WorkflowListItem toListItem(WorkflowStatusEntity entity) {
+        return new WorkflowListItem(
+                entity.getProcessInstanceKey(),
+                entity.getProcessId(),
+                entity.getStatus(),
+                entity.getMessage(),
+                entity.getUpdatedAt()
+        );
     }
 
     private void publish(WorkflowStatus status) {
