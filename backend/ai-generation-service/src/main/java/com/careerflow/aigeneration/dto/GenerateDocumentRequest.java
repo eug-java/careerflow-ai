@@ -12,6 +12,7 @@ import java.util.UUID;
 public record GenerateDocumentRequest(
         @NotNull UUID profileId,
         @NotNull UUID jobId,
-        @NotNull DocumentType documentType
+        @NotNull DocumentType documentType,
+        UUID ownerId
 ) {
 }

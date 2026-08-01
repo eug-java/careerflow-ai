@@ -5,19 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class ResumeParserService {
 
-    private final ChatClient chatClient;
+    private final UserChatClientFactory chatClientFactory;
     private final ObjectMapper objectMapper;
 
-    public ResumeParserService(ChatClient.Builder chatClientBuilder, ObjectMapper objectMapper) {
-        this.chatClient = chatClientBuilder.build();
+    public ResumeParserService(UserChatClientFactory chatClientFactory, ObjectMapper objectMapper) {
+        this.chatClientFactory = chatClientFactory;
         this.objectMapper = objectMapper;
     }
 
-    public ParsedResumeResponse parse(String rawText) {
+    public ParsedResumeResponse parse(UUID userId, String rawText) {
         try {
+            ChatClient chatClient = chatClientFactory.forUser(userId);
             String content = chatClient.prompt()
                     .system("""
                             You are a resume parser for US job seekers.

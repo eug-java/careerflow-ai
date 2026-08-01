@@ -54,12 +54,14 @@ public class ManualZeebeWorkers {
                         String profileId = (String) variables.get("profileId");
                         String jobId = (String) variables.get("jobId");
                         String documentType = (String) variables.get("documentType");
+                        String ownerId = (String) variables.get("ownerId");
 
                         GenerateContentResponse aiResponse =
                                 aiGenerationClient.generateContent(
                                         UUID.fromString(profileId),
                                         UUID.fromString(jobId),
-                                        documentType
+                                        documentType,
+                                        UUID.fromString(ownerId)
                                 );
 
                         String content = aiResponse.content();

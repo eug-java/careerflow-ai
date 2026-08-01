@@ -11,6 +11,7 @@ import MatchHistoryPage from "../pages/MatchHistoryPage";
 import DocumentsPage from "../pages/DocumentsPage";
 import EmailInboxPage from "../pages/EmailInboxPage";
 import EmailSettingsPage from "../pages/EmailSettingsPage";
+import AiSettingsPage from "../pages/AiSettingsPage";
 import ProtectedRoute from "./ProtectedRoute";
 import CreateJobPage from "../pages/CreateJobPage";
 import EditProfilePage from "../pages/EditProfilePage";
@@ -122,6 +123,14 @@ export const router = createBrowserRouter([
         element: (
             <ProtectedRoute>
                 <EmailSettingsPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/settings/ai",
+        element: (
+            <ProtectedRoute>
+                <AiSettingsPage />
             </ProtectedRoute>
         ),
     },

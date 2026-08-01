@@ -10,6 +10,7 @@ import com.careerflow.aigeneration.service.AiGenerationService;
 import com.careerflow.aigeneration.service.JobDescriptionParserService;
 import com.careerflow.aigeneration.service.ResumeParserService;
 import com.careerflow.aigeneration.service.ResumeTextExtractor;
+import com.careerflow.common.security.CurrentUserProvider;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,17 +46,20 @@ public class AiGenerationController {
     public ParsedJobDescriptionResponse parseJobDescription(
             @Valid @RequestBody ParseJobDescriptionRequest request
     ) {
-        return jobDescriptionParserService.parse(request.text());
+        return jobDescriptionParserService.parse(CurrentUserProvider.requireUserId(), request.text());
     }
 
     @PostMapping("/profiles/parse")
     public ParsedResumeResponse parseResume(@Valid @RequestBody ParseResumeRequest request) {
-        return resumeParserService.parse(request.text());
+        return resumeParserService.parse(CurrentUserProvider.requireUserId(), request.text());
     }
 
     @PostMapping(value = "/profiles/parse-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ParsedResumeResponse parseResumeFile(@RequestParam("file") MultipartFile file) {
-        return resumeParserService.parse(resumeTextExtractor.extractText(file));
+        return resumeParserService.parse(
+                CurrentUserProvider.requireUserId(),
+                resumeTextExtractor.extractText(file)
+        );
     }
 
     @PostMapping("/content")

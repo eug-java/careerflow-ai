@@ -4,6 +4,19 @@ server:
 spring:
   application:
     name: ai-generation-service
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5439/careerflow_ai}
+    username: ${SPRING_DATASOURCE_USERNAME:careerflow}
+    password: ${SPRING_DATASOURCE_PASSWORD:careerflow}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -11,18 +24,14 @@ spring:
         spring.json.add.type.headers: false
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY}
-      chat:
-        options:
-          model: gpt-4o-mini
-          temperature: 0.2
 
 careerflow:
   internal-api-key: ${CAREERFLOW_INTERNAL_API_KEY:local-internal-key}
   jwt:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}
+  ai:
+    encryption-key: ${CAREERFLOW_AI_ENCRYPTION_KEY:0123456789abcdef0123456789abcdef}
+    fallback-api-key: ${OPENAI_API_KEY:}
   services:
     profile-service-url: ${PROFILE_SERVICE_URL:http://localhost:8081}
     job-service-url: ${JOB_SERVICE_URL:http://localhost:8082}

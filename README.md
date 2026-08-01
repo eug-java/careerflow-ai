@@ -138,12 +138,12 @@ make infra-up
 docker compose -f docker-compose.yml up -d
 ```
 
-Infrastructure includes PostgreSQL (profile `:5432`, job `:5433`, matching `:5434`, document `:5435`, workflow `:5436`, auth `:5437`, email `:5438`), Kafka, MinIO, Zeebe, Prometheus, and Grafana.
+Infrastructure includes PostgreSQL (profile `:5432`, job `:5433`, matching `:5434`, document `:5435`, workflow `:5436`, auth `:5437`, email `:5438`, ai `:5439`), Kafka, MinIO, Zeebe, Prometheus, and Grafana.
 
 ### Full stack in Docker (one command)
 
 ```bash
-# copy env and set OPENAI_API_KEY, then:
+# copy .env (JWT, encryption keys), then:
 docker compose up -d --build
 
 # or
@@ -249,14 +249,18 @@ All HTTP requests propagate `X-Correlation-Id` through the API gateway and micro
 Set environment variables (see `.env.example`):
 
 ```Bash
-export OPENAI_API_KEY=your_key_here
 export JWT_SECRET=change-me-change-me-change-me-change-me
 export CAREERFLOW_INTERNAL_API_KEY=local-internal-key
 export CAREERFLOW_EMAIL_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
+export CAREERFLOW_AI_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
 export CAREERFLOW_ADMIN_PASSWORD=ChangeMeNow123!
+# Optional platform fallback OpenAI key:
+# export OPENAI_API_KEY=your_key_here
 ```
 
-`CAREERFLOW_EMAIL_ENCRYPTION_KEY` must be exactly 32 characters — used to encrypt mailbox passwords in `email-service`.
+`CAREERFLOW_EMAIL_ENCRYPTION_KEY` and `CAREERFLOW_AI_ENCRYPTION_KEY` must be exactly 32 characters — used to encrypt mailbox passwords and per-user OpenAI keys.
+
+Each user configures their OpenAI API key in the UI at **AI Settings** (`/settings/ai`). The key is stored encrypted in PostgreSQL (`careerflow_ai` on port `5439`).
 
 `JWT_SECRET` must be at least 32 characters and shared across auth-service, api-gateway, and all resource servers.
 

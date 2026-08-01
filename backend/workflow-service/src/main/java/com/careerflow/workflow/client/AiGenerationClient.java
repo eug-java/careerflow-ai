@@ -26,15 +26,21 @@ public class AiGenerationClient {
 
     @Retry(name = "aiGenerationServiceRetry")
     @CircuitBreaker(name = "aiGenerationServiceCircuitBreaker", fallbackMethod = "generateContentFallback")
-    public GenerateContentResponse generateContent(UUID profileId, UUID jobId, String documentType) {
+    public GenerateContentResponse generateContent(UUID profileId, UUID jobId, String documentType, UUID ownerId) {
         return restClient.post()
                 .uri("/api/v1/generations/content")
-                .body(new GenerateContentRequest(profileId, jobId, documentType))
+                .body(new GenerateContentRequest(profileId, jobId, documentType, ownerId))
                 .retrieve()
                 .body(GenerateContentResponse.class);
     }
 
-    private GenerateContentResponse generateContentFallback(UUID profileId, UUID jobId, String documentType, Throwable throwable) {
+    private GenerateContentResponse generateContentFallback(
+            UUID profileId,
+            UUID jobId,
+            String documentType,
+            UUID ownerId,
+            Throwable throwable
+    ) {
         String content = """
                 # Generated Document
 

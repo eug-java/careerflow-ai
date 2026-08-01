@@ -7,4 +7,4 @@ package com.careerflow.workflow.client;
 
 import java.util.UUID;
 
-public record GenerateContentRequest(UUID profileId, UUID jobId, String documentType) {}
+public record GenerateContentRequest(UUID profileId, UUID jobId, String documentType, UUID ownerId) {}

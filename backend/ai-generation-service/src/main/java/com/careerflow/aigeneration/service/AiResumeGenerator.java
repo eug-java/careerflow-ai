@@ -13,21 +13,23 @@ import org.springframework.stereotype.Component;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
 public class AiResumeGenerator {
 
-    private final ChatClient chatClient;
+    private final UserChatClientFactory chatClientFactory;
 
-    public AiResumeGenerator(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder.build();
+    public AiResumeGenerator(UserChatClientFactory chatClientFactory) {
+        this.chatClientFactory = chatClientFactory;
     }
 
     @Retry(name = "openAiRetry")
     @CircuitBreaker(name = "openAiCircuitBreaker")
-    public String generate(ProfileResponse profile, JobResponse job, DocumentType documentType) {
+    public String generate(UUID userId, ProfileResponse profile, JobResponse job, DocumentType documentType) {
         String prompt = buildPrompt(profile, job, documentType);
+        ChatClient chatClient = chatClientFactory.forUser(userId);
 
         return chatClient.prompt()
                 .system("""

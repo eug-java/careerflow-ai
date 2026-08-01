@@ -285,14 +285,14 @@ Check gateway CORS and OPTIONS permit.
 
 ### AI parsing fails
 
-Check:
+1. Save a valid OpenAI API key in **AI Settings** (`/settings/ai`).
+2. Optional local fallback:
+
 ```bash
 echo $OPENAI_API_KEY
-```
-Start service with:
-```bash
 OPENAI_API_KEY=$OPENAI_API_KEY mvn spring-boot:run
 ```
+
 ### Kafka issue
 
 Check Kafka topic:

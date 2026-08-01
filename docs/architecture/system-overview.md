@@ -160,8 +160,16 @@ Responsible for:
 - Resume generation
 - Cover letter generation
 - Raw job description parsing
-- Spring AI / OpenAI integration
-- Fallback deterministic generation
+- Resume parsing (text and file upload)
+- Per-user OpenAI API key storage (encrypted in PostgreSQL)
+- Spring AI integration using the authenticated user's key
+- Optional platform fallback via `OPENAI_API_KEY`
+- Fallback deterministic generation when AI is unavailable
+
+User-facing credential API:
+
+- `GET/PUT/DELETE /api/v1/ai/account`
+- `POST /api/v1/ai/account/test`
 
 ## workflow-service
 

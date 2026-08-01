@@ -8,7 +8,7 @@
 - Docker (required for Testcontainers integration tests and local infra)
 - Node.js 22+
 - npm
-- OpenAI API key (for AI generation)
+- OpenAI API key (save per user in **AI Settings**, or optional platform fallback via `OPENAI_API_KEY`)
 
 ## Quick Start
 
@@ -30,14 +30,18 @@ make up
 ## Environment
 
 ```bash
-export OPENAI_API_KEY=your_openai_api_key_here
 export JWT_SECRET=change-me-change-me-change-me-change-me
 export CAREERFLOW_INTERNAL_API_KEY=local-internal-key
 export CAREERFLOW_EMAIL_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
+export CAREERFLOW_AI_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
 export CAREERFLOW_ADMIN_PASSWORD=ChangeMeNow123!
+# Optional platform fallback when users have not saved their own key:
+# export OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-`CAREERFLOW_EMAIL_ENCRYPTION_KEY` must be exactly 32 characters (encrypts mailbox passwords in email-service).
+`CAREERFLOW_EMAIL_ENCRYPTION_KEY` and `CAREERFLOW_AI_ENCRYPTION_KEY` must be exactly 32 characters (encrypt stored credentials).
+
+Each user saves their OpenAI API key in the app under **Settings → AI Settings** (`/settings/ai`). Keys are encrypted at rest in `careerflow_ai` PostgreSQL.
 
 ## Infrastructure Ports
 
@@ -50,6 +54,7 @@ export CAREERFLOW_ADMIN_PASSWORD=ChangeMeNow123!
 | workflow-postgres | 5436 |
 | auth-postgres | 5437 |
 | email-postgres | 5438 |
+| ai-generation-postgres | 5439 |
 | Kafka | 9092 |
 | MinIO API / Console | 9000 / 9001 |
 | Zeebe | 26500 |
@@ -65,7 +70,7 @@ Recommended order:
 3. job-service (8082)
 4. matching-service (8083)
 5. document-service (8085)
-6. ai-generation-service (8084)
+6. ai-generation-service (8084) — requires ai-generation-postgres
 7. workflow-service (8086)
 8. email-service (8087) — requires email-postgres and document-service (for reply attachments)
 9. api-gateway-service (8080)
@@ -139,7 +144,13 @@ docker exec -it careerflow-kafka /opt/kafka/bin/kafka-topics.sh \
 
 Open http://localhost:9001 and check bucket `careerflow-documents`.
 
-### OpenAI key not picked up
+### AI generation fails
+
+1. Log in and open **AI Settings** (`/settings/ai`) to save a valid OpenAI API key.
+2. Optional dev fallback: set `OPENAI_API_KEY` in `.env` (used only when the user has no saved key).
+3. Ensure `ai-generation-postgres` is running (port `5439`).
+
+### OpenAI key not picked up (legacy fallback)
 
 ```bash
 OPENAI_API_KEY=$OPENAI_API_KEY mvn spring-boot:run

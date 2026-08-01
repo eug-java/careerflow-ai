@@ -10,22 +10,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class JobDescriptionParserService {
 
-    private final ChatClient chatClient;
+    private final UserChatClientFactory chatClientFactory;
     private final ObjectMapper objectMapper;
 
     public JobDescriptionParserService(
-            ChatClient.Builder chatClientBuilder,
+            UserChatClientFactory chatClientFactory,
             ObjectMapper objectMapper
     ) {
-        this.chatClient = chatClientBuilder.build();
+        this.chatClientFactory = chatClientFactory;
         this.objectMapper = objectMapper;
     }
 
-    public ParsedJobDescriptionResponse parse(String rawText) {
+    public ParsedJobDescriptionResponse parse(UUID userId, String rawText) {
         try {
+            ChatClient chatClient = chatClientFactory.forUser(userId);
             String content = chatClient.prompt()
                     .system("""
                             You are a job description parser.

@@ -3,7 +3,7 @@
 # One command:
 #   docker compose up -d --build
 #
-# Requires: Docker, Docker Compose v2, optional .env with OPENAI_API_KEY
+# Requires: Docker, Docker Compose v2, optional .env for platform secrets
 
 name: careerflow
 
@@ -23,6 +23,7 @@ x-app-env: &app-env
   JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me}
   CAREERFLOW_INTERNAL_API_KEY: ${CAREERFLOW_INTERNAL_API_KEY:-local-internal-key}
   CAREERFLOW_EMAIL_ENCRYPTION_KEY: ${CAREERFLOW_EMAIL_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef}
+  CAREERFLOW_AI_ENCRYPTION_KEY: ${CAREERFLOW_AI_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef}
 
 x-service-defaults: &service-defaults
   restart: unless-stopped
@@ -129,6 +130,20 @@ services:
     healthcheck:
       <<: *postgres-health
       test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_email"]
+
+  ai-generation-postgres:
+    <<: *postgres-defaults
+    container_name: careerflow-ai-generation-postgres
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_ai
+    ports:
+      - "5439:5432"
+    volumes:
+      - ai-generation-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_ai"]
 
   kafka:
     image: apache/kafka:4.1.2
@@ -303,13 +318,17 @@ services:
       - "8084:8084"
     environment:
       <<: *app-env
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ai-generation-postgres:5432/careerflow_ai
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       PROFILE_SERVICE_URL: http://profile-service:8081
       JOB_SERVICE_URL: http://job-service:8082
       MATCHING_SERVICE_URL: http://matching-service:8083
       DOCUMENT_SERVICE_URL: http://document-service:8085
     depends_on:
+      ai-generation-postgres:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       profile-service:
@@ -454,4 +473,5 @@ volumes:
   workflow-postgres-data:
   auth-postgres-data:
   email-postgres-data:
+  ai-generation-postgres-data:
   minio-data:

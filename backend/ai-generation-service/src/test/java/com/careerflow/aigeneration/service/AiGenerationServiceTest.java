@@ -44,16 +44,19 @@ class AiGenerationServiceTest {
         eventPublisher = mock(DocumentGeneratedEventPublisher.class);
         meterRegistry = new SimpleMeterRegistry();
         aiMetricsService = mock(AiMetricsService.class);
+        UserChatClientFactory chatClientFactory = mock(UserChatClientFactory.class);
 
         service = new AiGenerationService(
                 profileClient,
                 jobClient,
                 fallbackGenerator,
                 aiResumeGenerator,
+                chatClientFactory,
                 eventPublisher,
                 meterRegistry,
                 aiMetricsService
         );
+        when(chatClientFactory.resolveModel(any())).thenReturn("gpt-4o-mini");
         TestAuthSupport.authenticateTestUser();
     }
 
@@ -67,13 +70,14 @@ class AiGenerationServiceTest {
         GenerateDocumentRequest request = new GenerateDocumentRequest(
                 TestData.PROFILE_ID,
                 TestData.JOB_ID,
-                DocumentType.RESUME
+                DocumentType.RESUME,
+                null
         );
         var profile = TestData.profile();
         var job = TestData.job();
         when(profileClient.getProfile(TestData.PROFILE_ID)).thenReturn(profile);
         when(jobClient.getJob(TestData.JOB_ID)).thenReturn(job);
-        when(aiResumeGenerator.generate(profile, job, DocumentType.RESUME))
+        when(aiResumeGenerator.generate(any(), eq(profile), eq(job), eq(DocumentType.RESUME)))
                 .thenReturn("AI resume content");
 
         GenerateDocumentResponse response = service.generate(request);
@@ -106,13 +110,14 @@ class AiGenerationServiceTest {
         GenerateDocumentRequest request = new GenerateDocumentRequest(
                 TestData.PROFILE_ID,
                 TestData.JOB_ID,
-                DocumentType.COVER_LETTER
+                DocumentType.COVER_LETTER,
+                null
         );
         var profile = TestData.profile();
         var job = TestData.job();
         when(profileClient.getProfile(TestData.PROFILE_ID)).thenReturn(profile);
         when(jobClient.getJob(TestData.JOB_ID)).thenReturn(job);
-        when(aiResumeGenerator.generate(any(), any(), eq(DocumentType.COVER_LETTER)))
+        when(aiResumeGenerator.generate(any(), any(), any(), eq(DocumentType.COVER_LETTER)))
                 .thenThrow(new RuntimeException("OpenAI is unavailable"));
         when(fallbackGenerator.generate(profile, job, DocumentType.COVER_LETTER))
                 .thenReturn("Fallback cover letter");
@@ -131,7 +136,8 @@ class AiGenerationServiceTest {
         GenerateDocumentRequest request = new GenerateDocumentRequest(
                 TestData.PROFILE_ID,
                 TestData.JOB_ID,
-                DocumentType.RESUME
+                DocumentType.RESUME,
+                null
         );
         WebClientResponseException notFound = WebClientResponseException.create(
                 404,
@@ -155,13 +161,14 @@ class AiGenerationServiceTest {
         GenerateDocumentRequest request = new GenerateDocumentRequest(
                 TestData.PROFILE_ID,
                 TestData.JOB_ID,
-                DocumentType.RESUME
+                DocumentType.RESUME,
+                null
         );
         var profile = TestData.profile();
         var job = TestData.job();
         when(profileClient.getProfile(TestData.PROFILE_ID)).thenReturn(profile);
         when(jobClient.getJob(TestData.JOB_ID)).thenReturn(job);
-        when(aiResumeGenerator.generate(profile, job, DocumentType.RESUME))
+        when(aiResumeGenerator.generate(any(), eq(profile), eq(job), eq(DocumentType.RESUME)))
                 .thenReturn("AI content only");
 
         GenerateContentResponse response = service.generateContentOnly(request);

@@ -33,6 +33,11 @@ spring:
           predicates:
             - Path=/api/v1/generations/**
 
+        - id: ai-account-service
+          uri: ${AI_GENERATION_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/ai/**
+
         - id: document-service
           uri: ${DOCUMENT_SERVICE_URL:http://localhost:8085}
           predicates:

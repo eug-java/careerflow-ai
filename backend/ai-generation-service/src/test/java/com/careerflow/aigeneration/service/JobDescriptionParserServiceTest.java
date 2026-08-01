@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -14,11 +17,13 @@ import static org.mockito.Mockito.when;
 
 class JobDescriptionParserServiceTest {
 
+    private static final UUID USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
     @Test
     void parseShouldReturnStructuredJobDescriptionFromAiJson() {
-        ChatClient.Builder builder = mock(ChatClient.Builder.class);
+        UserChatClientFactory chatClientFactory = mock(UserChatClientFactory.class);
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
-        when(builder.build()).thenReturn(chatClient);
+        when(chatClientFactory.forUser(USER_ID)).thenReturn(chatClient);
         when(chatClient.prompt().system(anyString()).user(anyString()).call().content())
                 .thenReturn("""
                         {
@@ -37,9 +42,9 @@ class JobDescriptionParserServiceTest {
                           ]
                         }
                         """);
-        JobDescriptionParserService service = new JobDescriptionParserService(builder, new ObjectMapper());
+        JobDescriptionParserService service = new JobDescriptionParserService(chatClientFactory, new ObjectMapper());
 
-        ParsedJobDescriptionResponse response = service.parse("raw job description");
+        ParsedJobDescriptionResponse response = service.parse(USER_ID, "raw job description");
 
         assertThat(response.title()).isEqualTo("Senior Java Engineer");
         assertThat(response.companyName()).isEqualTo("CareerFlow");
@@ -57,14 +62,14 @@ class JobDescriptionParserServiceTest {
 
     @Test
     void parseShouldThrowIllegalStateExceptionWhenAiReturnsInvalidJson() {
-        ChatClient.Builder builder = mock(ChatClient.Builder.class);
+        UserChatClientFactory chatClientFactory = mock(UserChatClientFactory.class);
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
-        when(builder.build()).thenReturn(chatClient);
+        when(chatClientFactory.forUser(any())).thenReturn(chatClient);
         when(chatClient.prompt().system(anyString()).user(anyString()).call().content())
                 .thenReturn("not valid json");
-        JobDescriptionParserService service = new JobDescriptionParserService(builder, new ObjectMapper());
+        JobDescriptionParserService service = new JobDescriptionParserService(chatClientFactory, new ObjectMapper());
 
-        assertThatThrownBy(() -> service.parse("raw job description"))
+        assertThatThrownBy(() -> service.parse(USER_ID, "raw job description"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Failed to parse job description with AI")
                 .hasCauseInstanceOf(Exception.class);

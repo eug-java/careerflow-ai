@@ -10,6 +10,9 @@ import com.careerflow.aigeneration.service.AiGenerationService;
 import com.careerflow.aigeneration.service.JobDescriptionParserService;
 import com.careerflow.aigeneration.service.ResumeParserService;
 import com.careerflow.aigeneration.service.ResumeTextExtractor;
+import com.careerflow.common.test.TestAuthSupport;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -17,6 +20,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,9 +39,19 @@ class AiGenerationControllerTest {
             service, parserService, resumeParserService, resumeTextExtractor
     );
 
+    @BeforeEach
+    void setUp() {
+        TestAuthSupport.authenticateTestUser();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TestAuthSupport.clear();
+    }
+
     @Test
     void generateShouldDelegateToService() {
-        GenerateDocumentRequest request = new GenerateDocumentRequest(PROFILE_ID, JOB_ID, DocumentType.RESUME);
+        GenerateDocumentRequest request = new GenerateDocumentRequest(PROFILE_ID, JOB_ID, DocumentType.RESUME, null);
         GenerateDocumentResponse expected = new GenerateDocumentResponse(
                 PROFILE_ID,
                 JOB_ID,
@@ -57,7 +72,7 @@ class AiGenerationControllerTest {
 
     @Test
     void generateContentShouldDelegateToService() {
-        GenerateDocumentRequest request = new GenerateDocumentRequest(PROFILE_ID, JOB_ID, DocumentType.COVER_LETTER);
+        GenerateDocumentRequest request = new GenerateDocumentRequest(PROFILE_ID, JOB_ID, DocumentType.COVER_LETTER, null);
         GenerateContentResponse expected = new GenerateContentResponse(
                 PROFILE_ID,
                 JOB_ID,
@@ -88,13 +103,13 @@ class AiGenerationControllerTest {
                 "Build backend services.",
                 List.of(new ParsedJobSkillResponse("Java", true))
         );
-        when(parserService.parse("raw job description")).thenReturn(expected);
+        when(parserService.parse(any(), eq("raw job description"))).thenReturn(expected);
 
         ParsedJobDescriptionResponse actual = controller.parseJobDescription(
                 new com.careerflow.aigeneration.dto.ParseJobDescriptionRequest("raw job description")
         );
 
         assertThat(actual).isEqualTo(expected);
-        verify(parserService).parse("raw job description");
+        verify(parserService).parse(any(), eq("raw job description"));
     }
 }

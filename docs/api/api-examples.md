@@ -212,7 +212,45 @@ curl -X DELETE http://localhost:8080/api/v1/jobs/$JOB_ID \
 
 ---
 
-# 4. AI Job Parsing API
+# 4. AI Settings API
+
+Configure the authenticated user's OpenAI API key (encrypted at rest). Required before job parsing and document generation use AI.
+
+## Get AI account status
+
+```bash
+curl http://localhost:8080/api/v1/ai/account \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Save OpenAI API key
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/ai/account \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "apiKey": "sk-your-openai-key",
+    "provider": "openai",
+    "preferredModel": "gpt-4o-mini"
+  }'
+```
+
+## Test OpenAI connection
+
+```bash
+curl -X POST http://localhost:8080/api/v1/ai/account/test \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "apiKey": "sk-your-openai-key",
+    "preferredModel": "gpt-4o-mini"
+  }'
+```
+
+---
+
+# 5. AI Job Parsing API
 
 ## Parse Raw Job Description
 

@@ -32,6 +32,7 @@ public class AiGenerationService {
     private final JobClient jobClient;
     private final DocumentGeneratedEventPublisher eventPublisher;
     private final AiResumeGenerator aiResumeGenerator;
+    private final UserChatClientFactory chatClientFactory;
     private final DraftContentGenerator fallbackGenerator;
     private static final Logger log = LoggerFactory.getLogger(AiGenerationService.class);
     private final Counter generationCounter;
@@ -42,6 +43,7 @@ public class AiGenerationService {
             JobClient jobClient,
             DraftContentGenerator fallbackGenerator,
             AiResumeGenerator aiResumeGenerator,
+            UserChatClientFactory chatClientFactory,
             DocumentGeneratedEventPublisher eventPublisher,
             MeterRegistry meterRegistry,
             AiMetricsService aiMetricsService
@@ -50,6 +52,7 @@ public class AiGenerationService {
         this.jobClient = jobClient;
         this.fallbackGenerator = fallbackGenerator;
         this.aiResumeGenerator = aiResumeGenerator;
+        this.chatClientFactory = chatClientFactory;
         this.eventPublisher = eventPublisher;
         this.generationCounter = Counter.builder("careerflow_ai_generations_total")
                 .description("Total generated AI documents")
@@ -67,13 +70,14 @@ public class AiGenerationService {
             );
         }
         JobResponse job = jobClient.getJob(request.jobId());
+        UUID userId = resolveUserId(request);
 
         String content;
         String generationMode;
-        String model = "gpt-4o-mini";
+        String model = chatClientFactory.resolveModel(userId);
 
         try {
-            content = aiResumeGenerator.generate(profile, job, request.documentType());
+            content = aiResumeGenerator.generate(userId, profile, job, request.documentType());
             generationMode = "AI";
             generationCounter.increment();
             aiMetricsService.recordSuccess(
@@ -96,7 +100,7 @@ public class AiGenerationService {
         eventPublisher.publish(
                 new DocumentGeneratedEvent(
                         UUID.randomUUID(),
-                        CurrentUserProvider.requireUserId(),
+                        userId,
                         request.profileId(),
                         request.jobId(),
                         request.documentType().name(),
@@ -121,13 +125,14 @@ public class AiGenerationService {
         aiMetricsService.recordRequest(request.documentType().name());
         ProfileResponse profile = profileClient.getProfile(request.profileId());
         JobResponse job = jobClient.getJob(request.jobId());
+        UUID userId = resolveUserId(request);
 
         String content;
         String generationMode;
-        String model = "gpt-4o-mini";
+        String model = chatClientFactory.resolveModel(userId);
 
         try {
-            content = aiResumeGenerator.generate(profile, job, request.documentType());
+            content = aiResumeGenerator.generate(userId, profile, job, request.documentType());
             generationMode = "AI";
             aiMetricsService.recordSuccess(
                     request.documentType().name(),
@@ -153,5 +158,12 @@ public class AiGenerationService {
                 model,
                 content
         );
+    }
+
+    private UUID resolveUserId(GenerateDocumentRequest request) {
+        if (request.ownerId() != null) {
+            return request.ownerId();
+        }
+        return CurrentUserProvider.requireUserId();
     }
 }
