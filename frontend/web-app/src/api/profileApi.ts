@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 
+export type LocationPreference = "CITY" | "METRO" | "NATIONWIDE";
+
 export interface Skill {
     id?: string;
     name: string;
@@ -25,6 +27,7 @@ export interface Profile {
     email: string;
     phone?: string;
     location: string;
+    locationPreference?: LocationPreference;
     summary: string;
     skills?: Skill[];
     experiences?: Experience[];
@@ -38,6 +41,7 @@ export interface CreateProfileRequest {
     email: string;
     phone: string;
     location: string;
+    locationPreference?: LocationPreference;
     summary: string;
     skills?: Skill[];
     experiences?: Experience[];

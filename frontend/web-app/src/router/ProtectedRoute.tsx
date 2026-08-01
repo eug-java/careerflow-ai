@@ -1,15 +1,45 @@
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
-import { isTokenExpired } from "../api/client";
+import { ensureValidAccessToken } from "../api/authApi";
 
 interface Props {
     children: ReactNode;
 }
 
 export default function ProtectedRoute({ children }: Props) {
-    const token = localStorage.getItem("accessToken");
+    const [ready, setReady] = useState(false);
+    const [allowed, setAllowed] = useState(false);
 
-    if (!token || isTokenExpired(token)) {
+    useEffect(() => {
+        let active = true;
+
+        ensureValidAccessToken()
+            .then((token) => {
+                if (!active) {
+                    return;
+                }
+                setAllowed(Boolean(token));
+                setReady(true);
+            })
+            .catch(() => {
+                if (!active) {
+                    return;
+                }
+                setAllowed(false);
+                setReady(true);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    if (!ready) {
+        return null;
+    }
+
+    if (!allowed) {
         return <Navigate to="/login" replace />;
     }
 

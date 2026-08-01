@@ -25,6 +25,7 @@ public class JobMatchResult {
     private BigDecimal skillsScore;
     private BigDecimal locationScore;
     private BigDecimal salaryScore;
+    private BigDecimal experienceScore;
 
     @Column(columnDefinition = "text")
     private String explanation;
@@ -89,6 +90,14 @@ public class JobMatchResult {
 
     public void setSalaryScore(BigDecimal salaryScore) {
         this.salaryScore = salaryScore;
+    }
+
+    public BigDecimal getExperienceScore() {
+        return experienceScore;
+    }
+
+    public void setExperienceScore(BigDecimal experienceScore) {
+        this.experienceScore = experienceScore;
     }
 
     public String getExplanation() {

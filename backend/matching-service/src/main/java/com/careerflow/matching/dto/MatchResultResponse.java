@@ -17,6 +17,7 @@ public record MatchResultResponse(
         BigDecimal skillsScore,
         BigDecimal locationScore,
         BigDecimal salaryScore,
+        BigDecimal experienceScore,
         String explanation,
         Instant createdAt
 ) {

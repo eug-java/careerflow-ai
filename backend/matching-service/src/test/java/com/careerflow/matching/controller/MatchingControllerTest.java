@@ -122,6 +122,7 @@ class MatchingControllerTest {
                 new BigDecimal("90.00"),
                 new BigDecimal("100"),
                 new BigDecimal("50"),
+                new BigDecimal("70.00"),
                 "Strong match",
                 Instant.parse("2026-05-23T12:00:00Z")
         );

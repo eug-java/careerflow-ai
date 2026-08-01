@@ -93,6 +93,7 @@ export default function MatchHistoryPage() {
                                         label="Location"
                                         score={Number(match.locationScore)}
                                     />
+                                    <ScoreBar label="Experience" score={Number(match.experienceScore ?? 0)} />
                                     <ScoreBar label="Salary" score={Number(match.salaryScore)} />
                                 </div>
                             </div>

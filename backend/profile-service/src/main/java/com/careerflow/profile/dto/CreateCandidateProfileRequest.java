@@ -17,6 +17,7 @@ public record CreateCandidateProfileRequest(
         @Email String email,
         String phone,
         String location,
+        LocationPreference locationPreference,
         String summary,
 
         @Valid List<SkillRequest> skills,

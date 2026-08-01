@@ -2,6 +2,7 @@
 package com.careerflow.profile.service;
 
 import com.careerflow.profile.dto.CreateCandidateProfileRequest;
+import com.careerflow.profile.dto.LocationPreference;
 import com.careerflow.profile.dto.ExperienceRequest;
 import com.careerflow.profile.dto.SkillRequest;
 import com.careerflow.profile.entity.CandidateExperience;
@@ -93,6 +94,7 @@ class CandidateProfileServiceTest {
                 "Evgenii Buianov",
                 "Java Backend Developer",
                 "eug.java.dev@gmail.com",
+                null,
                 null,
                 null,
                 null,
@@ -191,6 +193,7 @@ class CandidateProfileServiceTest {
                 "eug.java.dev@gmail.com",
                 "+1 512 555 0100",
                 "Austin, TX",
+                LocationPreference.CITY,
                 "Java backend engineer with Spring Boot experience.",
                 List.of(
                         new SkillRequest("Java", "Backend", new BigDecimal("6.0")),

@@ -6,6 +6,7 @@
 package com.careerflow.matching.client;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,14 +17,28 @@ public record ProfileResponse(
         String email,
         String phone,
         String location,
+        String locationPreference,
         String summary,
-        List<SkillResponse> skills
+        List<SkillResponse> skills,
+        List<ExperienceResponse> experiences
 ) {
     public record SkillResponse(
             UUID id,
             String name,
             String category,
             BigDecimal yearsOfExperience
+    ) {
+    }
+
+    public record ExperienceResponse(
+            UUID id,
+            String companyName,
+            String positionTitle,
+            String location,
+            LocalDate startDate,
+            LocalDate endDate,
+            Boolean currentPosition,
+            String description
     ) {
     }
 }

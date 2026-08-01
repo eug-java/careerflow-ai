@@ -3,6 +3,7 @@ package com.careerflow.profile.controller;
 
 import com.careerflow.common.api.GlobalExceptionHandler;
 import com.careerflow.common.security.CareerflowSecurityAutoConfiguration;
+import com.careerflow.profile.dto.LocationPreference;
 import com.careerflow.profile.dto.CandidateProfileResponse;
 import com.careerflow.profile.dto.ExperienceResponse;
 import com.careerflow.profile.dto.SkillResponse;
@@ -187,6 +188,7 @@ class CandidateProfileControllerTest {
                 "eug.java.dev@gmail.com",
                 "+1 512 555 0100",
                 "Austin, TX",
+                LocationPreference.CITY,
                 "Java backend engineer.",
                 List.of(new SkillResponse(UUID.randomUUID(), "Java", "Backend", new BigDecimal("6.0"))),
                 List.of(new ExperienceResponse(

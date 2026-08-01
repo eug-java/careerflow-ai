@@ -16,6 +16,7 @@ public record CandidateProfileResponse(
         String email,
         String phone,
         String location,
+        LocationPreference locationPreference,
         String summary,
         List<SkillResponse> skills,
         List<ExperienceResponse> experiences,

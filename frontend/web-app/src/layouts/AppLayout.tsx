@@ -35,6 +35,9 @@ export default function AppLayout({ children }: Props) {
                     <NavLink to="/email" className={navClass}>
                         Email
                     </NavLink>
+                    <NavLink to="/email/settings" className={navClass}>
+                        Email Settings
+                    </NavLink>
                 </nav>
 
                 <button

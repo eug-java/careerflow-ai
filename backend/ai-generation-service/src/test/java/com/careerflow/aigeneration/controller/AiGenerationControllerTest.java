@@ -8,6 +8,8 @@ import com.careerflow.aigeneration.dto.ParsedJobDescriptionResponse;
 import com.careerflow.aigeneration.dto.ParsedJobSkillResponse;
 import com.careerflow.aigeneration.service.AiGenerationService;
 import com.careerflow.aigeneration.service.JobDescriptionParserService;
+import com.careerflow.aigeneration.service.ResumeParserService;
+import com.careerflow.aigeneration.service.ResumeTextExtractor;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -26,7 +28,11 @@ class AiGenerationControllerTest {
 
     private final AiGenerationService service = mock(AiGenerationService.class);
     private final JobDescriptionParserService parserService = mock(JobDescriptionParserService.class);
-    private final AiGenerationController controller = new AiGenerationController(service, parserService);
+    private final ResumeParserService resumeParserService = mock(ResumeParserService.class);
+    private final ResumeTextExtractor resumeTextExtractor = mock(ResumeTextExtractor.class);
+    private final AiGenerationController controller = new AiGenerationController(
+            service, parserService, resumeParserService, resumeTextExtractor
+    );
 
     @Test
     void generateShouldDelegateToService() {

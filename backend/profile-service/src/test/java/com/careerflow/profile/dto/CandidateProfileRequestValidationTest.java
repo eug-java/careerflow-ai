@@ -23,6 +23,7 @@ class CandidateProfileRequestValidationTest {
                 "eug.java.dev@gmail.com",
                 "+1 512 555 0100",
                 "Austin, TX",
+                LocationPreference.CITY,
                 "Java backend engineer.",
                 List.of(new SkillRequest("Java", "Backend", new BigDecimal("6.0"))),
                 List.of(new ExperienceRequest(
@@ -45,6 +46,7 @@ class CandidateProfileRequestValidationTest {
                 "",
                 "Java Backend Developer",
                 "invalid-email",
+                null,
                 null,
                 null,
                 null,

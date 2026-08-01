@@ -8,6 +8,7 @@ export interface MatchResult {
     skillsScore: number;
     locationScore: number;
     salaryScore: number;
+    experienceScore?: number;
     explanation: string;
     createdAt: string;
 }

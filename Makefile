@@ -43,9 +43,14 @@ frontend-build:
 docker-build:
 	docker build -f backend/auth-service/Dockerfile .
 	docker build -f backend/profile-service/Dockerfile .
-docker build -f backend/document-service/Dockerfile .
-docker build -f backend/email-service/Dockerfile .
-docker build -f backend/api-gateway-service/Dockerfile .
+	docker build -f backend/job-service/Dockerfile .
+	docker build -f backend/matching-service/Dockerfile .
+	docker build -f backend/ai-generation-service/Dockerfile .
+	docker build -f backend/document-service/Dockerfile .
+	docker build -f backend/workflow-service/Dockerfile .
+	docker build -f backend/email-service/Dockerfile .
+	docker build -f backend/api-gateway-service/Dockerfile .
+	docker build -f frontend/web-app/Dockerfile .
 
 compose-validate:
 	docker compose -f docker-compose.yml config >/dev/null
