@@ -176,6 +176,7 @@ export default function JobsPage() {
                                             <div className="grid md:grid-cols-3 gap-3 mt-4 max-w-xl">
                                                 <ScoreBar label="Skills" score={Number(match.skillsScore)} />
                                                 <ScoreBar label="Location" score={Number(match.locationScore)} />
+                                                <ScoreBar label="Experience" score={Number(match.experienceScore ?? 0)} />
                                                 <ScoreBar label="Salary" score={Number(match.salaryScore)} />
                                             </div>
                                         )}

@@ -58,21 +58,6 @@ public class CandidateProfileService {
         return toResponse(profile);
     }
 
-//    @Transactional
-//    public CandidateProfileResponse update(UUID id, CreateCandidateProfileRequest request) {
-//        CandidateProfile profile = repository.findById(id)
-//                .orElseThrow(() -> new IllegalArgumentException("Profile not found: " + id));
-//
-//        profile.setFullName(request.fullName());
-//        profile.setProfessionalTitle(request.professionalTitle());
-//        profile.setEmail(request.email());
-//        profile.setPhone(request.phone());
-//        profile.setLocation(request.location());
-//        profile.setSummary(request.summary());
-//
-//        return toResponse(profile);
-//    }
-
     @Transactional
     public CandidateProfileResponse update(UUID id, CreateCandidateProfileRequest request) {
         CandidateProfile profile = findEntityById(id);
@@ -91,14 +76,6 @@ public class CandidateProfileService {
         assertOwned(profile);
         repository.delete(profile);
     }
-//    @Transactional
-//    public void delete(UUID id) {
-//        Profile profile = repository.findById(id)
-//                .orElseThrow(() -> new IllegalArgumentException("Profile not found: " + id));
-//
-//        repository.delete(profile);
-
-//    }
 
     private CandidateProfile findEntityById(UUID id) {
         if (InternalAuthSupport.isInternalCall()) {
@@ -124,6 +101,7 @@ public class CandidateProfileService {
         profile.setEmail(request.email());
         profile.setPhone(request.phone());
         profile.setLocation(request.location());
+        profile.setLocationPreference(request.locationPreference());
         profile.setSummary(request.summary());
     }
 
@@ -175,6 +153,7 @@ public class CandidateProfileService {
                 profile.getEmail(),
                 profile.getPhone(),
                 profile.getLocation(),
+                profile.getLocationPreference(),
                 profile.getSummary(),
                 toSkillResponses(profile.getSkills()),
                 toExperienceResponses(profile.getExperiences()),

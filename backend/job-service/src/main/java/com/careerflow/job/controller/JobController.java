@@ -26,7 +26,7 @@ public class JobController {
     }
 
     @PostMapping
-    public JobResponse create(@RequestBody CreateJobRequest request) {
+    public JobResponse create(@Valid @RequestBody CreateJobRequest request) {
         return service.create(request);
     }
 

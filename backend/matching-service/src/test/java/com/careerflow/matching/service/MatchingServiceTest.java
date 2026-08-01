@@ -68,12 +68,16 @@ class MatchingServiceTest {
         UUID profileId = UUID.randomUUID();
         UUID jobId = UUID.randomUUID();
         CreateMatchRequest request = new CreateMatchRequest(profileId, jobId);
-        ProfileResponse profile = new ProfileResponse(profileId, "Jane", "Developer", "jane@example.com", null, "Austin, TX", null, List.of());
+        ProfileResponse profile = new ProfileResponse(
+                profileId, "Jane", "Developer", "jane@example.com", null,
+                "Austin, TX", "CITY", null, List.of(), List.of()
+        );
         JobResponse job = new JobResponse(jobId, "Java Developer", "Company", "Austin, TX", "FULL_TIME", null, null, "USD", false, "Description", List.of());
         MatchingScoreCalculator.MatchScore score = new MatchingScoreCalculator.MatchScore(
                 new BigDecimal("88.50"),
                 new BigDecimal("90.00"),
                 new BigDecimal("100"),
+                new BigDecimal("70.00"),
                 new BigDecimal("55"),
                 "Good match"
         );
@@ -184,6 +188,7 @@ class MatchingServiceTest {
         result.setSkillsScore(new BigDecimal("80.00"));
         result.setLocationScore(new BigDecimal("70.00"));
         result.setSalaryScore(new BigDecimal("50.00"));
+        result.setExperienceScore(new BigDecimal("65.00"));
         result.setExplanation("Explanation");
         return result;
     }

@@ -74,7 +74,12 @@ jobs:
         service:
           - auth-service
           - profile-service
+          - job-service
+          - matching-service
+          - ai-generation-service
           - document-service
+          - workflow-service
+          - email-service
           - api-gateway-service
     steps:
       - uses: actions/checkout@v4
@@ -96,6 +101,10 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high

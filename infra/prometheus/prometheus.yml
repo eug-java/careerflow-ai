@@ -18,6 +18,21 @@ scrape_configs:
     static_configs:
       - targets: ['careerflow-job-service:8082']
 
+  - job_name: matching-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['careerflow-matching-service:8083']
+
+  - job_name: auth-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['careerflow-auth-service:8079']
+
+  - job_name: email-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['careerflow-email-service:8087']
+
   - job_name: workflow-service
     metrics_path: /actuator/prometheus
     static_configs:

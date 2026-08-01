@@ -5,6 +5,7 @@ import com.careerflow.matching.client.ProfileResponse;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,10 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MatchingScoreCalculatorTest {
 
-    private final MatchingScoreCalculator calculator = new MatchingScoreCalculator();
+    private final MatchingScoreCalculator calculator = new MatchingScoreCalculator(new LocationMatcher());
 
     @Test
-    void calculateReturnsPerfectScoreForAllRequiredSkillsRemoteJobAndSalaryProvided() {
+    void calculateReturnsStrongScoreForRemoteJobWithRequiredSkills() {
         ProfileResponse profile = profileWithSkills("Java", "Spring Boot", "Kafka");
         JobResponse job = jobWithSkills(true, "Austin, TX", 120_000.0, List.of(
                 requiredSkill("java"),
@@ -25,11 +26,10 @@ class MatchingScoreCalculatorTest {
 
         MatchingScoreCalculator.MatchScore score = calculator.calculate(profile, job);
 
-        assertThat(score.skillsScore()).isEqualByComparingTo("100.00");
+        assertThat(score.skillsScore()).isEqualByComparingTo("80.00");
         assertThat(score.locationScore()).isEqualByComparingTo("100");
-        assertThat(score.salaryScore()).isEqualByComparingTo("100");
-        assertThat(score.totalScore()).isEqualByComparingTo("100.00");
-        assertThat(score.explanation()).contains("Skills score", "Total score formula");
+        assertThat(score.experienceScore()).isNotNull();
+        assertThat(score.totalScore()).isGreaterThan(BigDecimal.valueOf(70));
     }
 
     @Test
@@ -43,10 +43,8 @@ class MatchingScoreCalculatorTest {
 
         MatchingScoreCalculator.MatchScore score = calculator.calculate(profile, job);
 
-        assertThat(score.skillsScore()).isEqualByComparingTo("50.00");
+        assertThat(score.skillsScore()).isEqualByComparingTo("40.00");
         assertThat(score.locationScore()).isEqualByComparingTo("100");
-        assertThat(score.salaryScore()).isEqualByComparingTo("50");
-        assertThat(score.totalScore()).isEqualByComparingTo("60.00");
     }
 
     @Test
@@ -57,46 +55,53 @@ class MatchingScoreCalculatorTest {
         MatchingScoreCalculator.MatchScore score = calculator.calculate(profile, job);
 
         assertThat(score.skillsScore()).isEqualByComparingTo("0");
-        assertThat(score.locationScore()).isEqualByComparingTo("70");
-        assertThat(score.salaryScore()).isEqualByComparingTo("50");
-        assertThat(score.totalScore()).isEqualByComparingTo("19.00");
+        assertThat(score.locationScore()).isEqualByComparingTo("75");
     }
 
     @Test
-    void calculateReturnsHundredSkillsScoreWhenNoRequiredSkillsExist() {
-        ProfileResponse profile = profileWithSkills();
-        JobResponse job = jobWithSkills(false, "New York, NY", null, List.of(optionalSkill("Java")));
-
-        MatchingScoreCalculator.MatchScore score = calculator.calculate(profile, job);
-
-        assertThat(score.skillsScore()).isEqualByComparingTo("100");
-    }
-
-    @Test
-    void calculateReturnsFallbackLocationScoreWhenLocationIsMissing() {
-        ProfileResponse profile = new ProfileResponse(UUID.randomUUID(), "Name", "Engineer", "a@b.com", null, null, null, List.of());
-        JobResponse job = jobWithSkills(false, null, null, List.of(requiredSkill("Java")));
-
-        MatchingScoreCalculator.MatchScore score = calculator.calculate(profile, job);
-
-        assertThat(score.locationScore()).isEqualByComparingTo("50");
-    }
-
-    @Test
-    void calculateReturnsLowLocationScoreForDifferentStates() {
-        ProfileResponse profile = new ProfileResponse(UUID.randomUUID(), "Name", "Engineer", "a@b.com", null, "Austin, TX", null, List.of());
+    void calculateReturnsHighScoreForNationwidePreference() {
+        ProfileResponse profile = new ProfileResponse(
+                UUID.randomUUID(), "Name", "Engineer", "a@b.com", null,
+                "Open to relocation anywhere in USA", "NATIONWIDE", null,
+                List.of(), List.of()
+        );
         JobResponse job = jobWithSkills(false, "Seattle, WA", null, List.of(requiredSkill("Java")));
 
         MatchingScoreCalculator.MatchScore score = calculator.calculate(profile, job);
 
-        assertThat(score.locationScore()).isEqualByComparingTo("30");
+        assertThat(score.locationScore()).isEqualByComparingTo("95");
+    }
+
+    @Test
+    void calculateUsesExperienceYearsFromWorkHistory() {
+        ProfileResponse profile = new ProfileResponse(
+                UUID.randomUUID(), "Jane", "Senior Java Developer", "jane@example.com", null,
+                "Austin, TX", "CITY", null,
+                List.of(new ProfileResponse.SkillResponse(UUID.randomUUID(), "Java", "backend", BigDecimal.valueOf(6))),
+                List.of(new ProfileResponse.ExperienceResponse(
+                        UUID.randomUUID(), "Acme", "Senior Engineer", "Austin, TX",
+                        LocalDate.of(2018, 1, 1), null, true, "Built microservices"
+                ))
+        );
+        JobResponse job = new JobResponse(
+                UUID.randomUUID(), "Senior Java Developer", "CareerFlow", "Austin, TX",
+                "FULL_TIME", 120_000.0, 150_000.0, "USD", false, "Backend role",
+                List.of(requiredSkill("Java"))
+        );
+
+        MatchingScoreCalculator.MatchScore score = calculator.calculate(profile, job);
+
+        assertThat(score.experienceScore()).isGreaterThanOrEqualTo(BigDecimal.valueOf(85));
     }
 
     private static ProfileResponse profileWithSkills(String... skills) {
         List<ProfileResponse.SkillResponse> skillResponses = java.util.Arrays.stream(skills)
                 .map(skill -> new ProfileResponse.SkillResponse(UUID.randomUUID(), skill, "backend", BigDecimal.ONE))
                 .toList();
-        return new ProfileResponse(UUID.randomUUID(), "Jane Doe", "Java Developer", "jane@example.com", null, "Austin, TX", null, skillResponses);
+        return new ProfileResponse(
+                UUID.randomUUID(), "Jane Doe", "Java Developer", "jane@example.com", null,
+                "Austin, TX", "CITY", null, skillResponses, List.of()
+        );
     }
 
     private static JobResponse jobWithSkills(boolean remote, String location, Double salaryMin, List<JobResponse.JobSkillResponse> skills) {

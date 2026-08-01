@@ -1,123 +1,76 @@
-import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import { createProfile } from "../api/profileApi";
+import { parseResumeFile } from "../api/generationApi";
+import ProfileFormFields, { type ProfileFormState } from "../components/profile/ProfileFormFields";
+import { createEmptyProfileFormState } from "../components/profile/profileFormState";
+import { useToast } from "../hooks/useToast";
 
 export default function CreateProfilePage() {
     const navigate = useNavigate();
+    const { pushToast } = useToast();
+    const [form, setForm] = useState<ProfileFormState>(createEmptyProfileFormState());
+    const [parsingResume, setParsingResume] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-    const [fullName, setFullName] = useState("");
-    const [professionalTitle, setProfessionalTitle] = useState("");
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
-    const [location, setLocation] = useState("");
-    const [summary, setSummary] = useState("");
+    async function handleParseResume(file: File) {
+        setParsingResume(true);
+        try {
+            const parsed = await parseResumeFile(file);
+            setForm((current) => ({
+                ...current,
+                fullName: parsed.fullName ?? current.fullName,
+                professionalTitle: parsed.professionalTitle ?? current.professionalTitle,
+                email: parsed.email ?? current.email,
+                phone: parsed.phone ?? current.phone,
+                locationPreference: parsed.locationPreference ?? current.locationPreference,
+                location: parsed.location ?? current.location,
+                summary: parsed.summary ?? current.summary,
+                skills: parsed.skills ?? current.skills,
+                experiences: parsed.experiences ?? current.experiences,
+            }));
+            pushToast("success", "Resume parsed. Review the fields before saving.");
+        } catch {
+            pushToast("error", "Failed to parse resume. Try another file or fill manually.");
+        } finally {
+            setParsingResume(false);
+        }
+    }
 
-    async function handleSubmit(event: FormEvent) {
+    async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
-
-        await createProfile({
-            fullName,
-            professionalTitle,
-            email,
-            phone,
-            location,
-            summary,
-        });
-
-        navigate("/profiles");
+        setSaving(true);
+        try {
+            await createProfile(form);
+            pushToast("success", "Profile created");
+            navigate("/profiles");
+        } catch {
+            pushToast("error", "Failed to create profile");
+        } finally {
+            setSaving(false);
+        }
     }
 
     return (
         <AppLayout>
             <div className="max-w-3xl">
                 <h1 className="text-4xl font-bold mb-8">Add Profile</h1>
-
-                <form
-                    onSubmit={handleSubmit}
-                    className="bg-white rounded-2xl shadow p-6 grid gap-5"
-                >
-                    <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Full name
-            </span>
-                        <input
-                            value={fullName}
-                            onChange={(event) => setFullName(event.target.value)}
-                            className="w-full border border-slate-300 rounded-xl px-4 py-2"
-                            required
-                        />
-                    </label>
-
-                    <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Professional title
-            </span>
-                        <input
-                            value={professionalTitle}
-                            onChange={(event) => setProfessionalTitle(event.target.value)}
-                            className="w-full border border-slate-300 rounded-xl px-4 py-2"
-                            required
-                        />
-                    </label>
-
-                    <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Email
-            </span>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(event) => setEmail(event.target.value)}
-                            className="w-full border border-slate-300 rounded-xl px-4 py-2"
-                            required
-                        />
-                    </label>
-
-                    <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Phone
-            </span>
-                        <input
-                            value={phone}
-                            onChange={(event) => setPhone(event.target.value)}
-                            className="w-full border border-slate-300 rounded-xl px-4 py-2"
-                        />
-                    </label>
-
-                    <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Location
-            </span>
-                        <input
-                            value={location}
-                            onChange={(event) => setLocation(event.target.value)}
-                            className="w-full border border-slate-300 rounded-xl px-4 py-2"
-                            required
-                        />
-                    </label>
-
-                    <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Resume summary / profile text
-            </span>
-                        <textarea
-                            value={summary}
-                            onChange={(event) => setSummary(event.target.value)}
-                            className="w-full border border-slate-300 rounded-xl px-4 py-2 min-h-48"
-                            required
-                        />
-                    </label>
-
+                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow p-6 grid gap-5">
+                    <ProfileFormFields
+                        value={form}
+                        onChange={setForm}
+                        onParseResumeFile={handleParseResume}
+                        parsingResume={parsingResume}
+                    />
                     <div className="flex gap-3">
                         <button
                             type="submit"
-                            className="bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-700"
+                            disabled={saving}
+                            className="bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-700 disabled:opacity-60"
                         >
-                            Save Profile
+                            {saving ? "Saving..." : "Save Profile"}
                         </button>
-
                         <button
                             type="button"
                             onClick={() => navigate("/profiles")}

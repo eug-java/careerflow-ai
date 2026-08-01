@@ -55,6 +55,7 @@ public class MatchingService {
         result.setSkillsScore(score.skillsScore());
         result.setLocationScore(score.locationScore());
         result.setSalaryScore(score.salaryScore());
+        result.setExperienceScore(score.experienceScore());
         result.setExplanation(score.explanation());
         if (!InternalAuthSupport.isInternalCall()) {
             result.setOwnerId(CurrentUserProvider.requireUserId());
@@ -72,6 +73,7 @@ public class MatchingService {
                 result.getSkillsScore(),
                 result.getLocationScore(),
                 result.getSalaryScore(),
+                result.getExperienceScore(),
                 result.getExplanation(),
                 result.getCreatedAt()
         );

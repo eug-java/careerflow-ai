@@ -26,6 +26,11 @@ public class CandidateProfile {
     private String phone;
     private String location;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private com.careerflow.profile.dto.LocationPreference locationPreference =
+            com.careerflow.profile.dto.LocationPreference.CITY;
+
     @Column(columnDefinition = "text")
     private String summary;
 
@@ -94,6 +99,16 @@ public class CandidateProfile {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public com.careerflow.profile.dto.LocationPreference getLocationPreference() {
+        return locationPreference;
+    }
+
+    public void setLocationPreference(com.careerflow.profile.dto.LocationPreference locationPreference) {
+        this.locationPreference = locationPreference == null
+                ? com.careerflow.profile.dto.LocationPreference.CITY
+                : locationPreference;
     }
 
     public String getSummary() {

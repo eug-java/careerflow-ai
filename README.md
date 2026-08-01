@@ -4,7 +4,7 @@ AI-powered resume tailoring and job application automation platform built with J
 
 ---
 
-![CI](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/eug-java/careerflow-ai/actions/workflows/ci.yml/badge.svg)
 
 ---
 

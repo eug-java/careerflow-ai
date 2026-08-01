@@ -175,7 +175,7 @@ export default function DashboardPage() {
                                             label="Location"
                                             score={Number(match.locationScore)}
                                         />
-                                        <ScoreBar label="Salary" score={Number(match.salaryScore)} />
+                                        <ScoreBar label="Experience" score={Number(match.experienceScore ?? 0)} />
                                     </div>
                                 </div>
                             ))}
