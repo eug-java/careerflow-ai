@@ -28,7 +28,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "@playwright/test": "^1.55.0",
-    "jsdom": "^26.1.0",
+    "jsdom": "^30.0.1",
     "vitest": "^3.2.4",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
