@@ -69,7 +69,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.3.0</version> <!-- Проверьте актуальную версию -->
+                <version>3.6.0</version> <!-- Проверьте актуальную версию -->
                 <executions>
                     <execution>
                         <id>validate</id>
