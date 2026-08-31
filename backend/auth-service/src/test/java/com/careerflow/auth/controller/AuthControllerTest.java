@@ -2,10 +2,12 @@ package com.careerflow.auth.controller;
 
 import com.careerflow.auth.dto.LoginRequest;
 import com.careerflow.auth.dto.LoginResponse;
+import com.careerflow.auth.dto.RegisterRequest;
 import com.careerflow.auth.security.JwtTokenService;
 import com.careerflow.auth.security.LoginRateLimiter;
 import com.careerflow.auth.security.RefreshTokenService;
 import com.careerflow.auth.service.UserAccountService;
+import com.careerflow.auth.service.UsernameAlreadyExistsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +43,34 @@ class AuthControllerTest {
 
     @InjectMocks
     private AuthController authController;
+
+    @Test
+    void registerShouldCreateAccountAndReturnTokens() {
+        UUID userId = UUID.randomUUID();
+        RegisterRequest request = new RegisterRequest("newuser", "password123");
+        when(userAccountService.register(request)).thenReturn(userId);
+        when(jwtTokenService.generateToken("newuser", userId)).thenReturn("jwt-token");
+        when(refreshTokenService.issueRefreshToken("newuser", userId)).thenReturn("refresh-token");
+        when(jwtTokenService.expiresInSeconds()).thenReturn(7200L);
+
+        LoginResponse response = authController.register(request);
+
+        assertThat(response.accessToken()).isEqualTo("jwt-token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
+        verify(loginRateLimiter).checkAllowed("register:newuser");
+    }
+
+    @Test
+    void registerShouldThrowConflictWhenUsernameExists() {
+        RegisterRequest request = new RegisterRequest("demo", "password123");
+        when(userAccountService.register(request)).thenThrow(new UsernameAlreadyExistsException("Username already taken"));
+
+        assertThatThrownBy(() -> authController.register(request))
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex -> {
+                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(ex.getReason()).isEqualTo("Username already taken");
+                });
+    }
 
     @Test
     void loginShouldReturnBearerTokenForValidDemoCredentials() {

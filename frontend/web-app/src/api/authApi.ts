@@ -16,6 +16,15 @@ export async function login(username: string, password: string): Promise<LoginRe
     return response.data;
 }
 
+export async function register(username: string, password: string): Promise<LoginResponse> {
+    const response = await apiClient.post<LoginResponse>("/api/v1/auth/register", {
+        username,
+        password,
+    });
+
+    return response.data;
+}
+
 export async function refreshAccessToken(refreshToken: string): Promise<LoginResponse> {
     const response = await apiClient.post<LoginResponse>("/api/v1/auth/refresh", {
         refreshToken,

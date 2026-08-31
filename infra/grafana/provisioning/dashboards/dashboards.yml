@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: CareerFlow
+    orgId: 1
+    folder: CareerFlow
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

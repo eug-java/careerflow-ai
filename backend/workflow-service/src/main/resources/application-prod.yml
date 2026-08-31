@@ -2,3 +2,15 @@ camunda:
   client:
     zeebe:
       use-plaintext: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
+

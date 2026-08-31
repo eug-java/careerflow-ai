@@ -1,24 +1,35 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login, storeAuthTokens } from "../api/authApi";
+import { register, storeAuthTokens } from "../api/authApi";
 
-export default function LoginPage() {
+export default function RegisterPage() {
     const navigate = useNavigate();
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
 
     async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
         setError("");
 
+        if (password !== confirmPassword) {
+            setError("Passwords do not match.");
+            return;
+        }
+
+        if (password.length < 8) {
+            setError("Password must be at least 8 characters.");
+            return;
+        }
+
         try {
-            const result = await login(username, password);
+            const result = await register(username, password);
             storeAuthTokens(result);
             navigate("/");
         } catch {
-            setError("Invalid username or password.");
+            setError("Could not create account. Username may already be taken.");
         }
     }
 
@@ -29,11 +40,11 @@ export default function LoginPage() {
                 className="bg-white w-full max-w-md rounded-2xl shadow p-8"
             >
                 <h1 className="text-3xl font-bold mb-2">
-                    CareerFlow AI
+                    Create account
                 </h1>
 
                 <p className="text-slate-500 mb-8">
-                    Sign in to continue. Demo account: demo / demo
+                    Start your CareerFlow workspace
                 </p>
 
                 {error && (
@@ -43,27 +54,43 @@ export default function LoginPage() {
                 )}
 
                 <label className="block mb-4">
-          <span className="block text-sm font-medium text-slate-700 mb-1">
-            Username
-          </span>
-
+                    <span className="block text-sm font-medium text-slate-700 mb-1">
+                        Username
+                    </span>
                     <input
                         value={username}
                         onChange={(event) => setUsername(event.target.value)}
                         className="w-full border border-slate-300 rounded-xl px-4 py-2"
+                        autoComplete="username"
+                        required
                     />
                 </label>
 
-                <label className="block mb-6">
-          <span className="block text-sm font-medium text-slate-700 mb-1">
-            Password
-          </span>
-
+                <label className="block mb-4">
+                    <span className="block text-sm font-medium text-slate-700 mb-1">
+                        Password
+                    </span>
                     <input
                         type="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         className="w-full border border-slate-300 rounded-xl px-4 py-2"
+                        autoComplete="new-password"
+                        required
+                    />
+                </label>
+
+                <label className="block mb-6">
+                    <span className="block text-sm font-medium text-slate-700 mb-1">
+                        Confirm password
+                    </span>
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-2"
+                        autoComplete="new-password"
+                        required
                     />
                 </label>
 
@@ -71,13 +98,13 @@ export default function LoginPage() {
                     type="submit"
                     className="w-full bg-slate-900 text-white rounded-xl py-3 hover:bg-slate-700"
                 >
-                    Sign In
+                    Create Account
                 </button>
 
                 <p className="text-sm text-slate-500 mt-6 text-center">
-                    New here?{" "}
-                    <Link to="/register" className="text-indigo-600 hover:underline">
-                        Create an account
+                    Already have an account?{" "}
+                    <Link to="/login" className="text-indigo-600 hover:underline">
+                        Sign in
                     </Link>
                 </p>
             </form>
