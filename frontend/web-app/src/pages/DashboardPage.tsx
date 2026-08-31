@@ -189,7 +189,12 @@ export default function DashboardPage() {
 
                 <div className="space-y-6">
                     <Card>
-                        <h2 className="text-xl font-semibold mb-4">Active pipeline</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-semibold">Active pipeline</h2>
+                            <Link to="/workflows" className="text-sm text-indigo-600 hover:underline">
+                                View all
+                            </Link>
+                        </div>
                         {runningWorkflows.length === 0 ? (
                             <p className="text-slate-500 text-sm">No workflows running right now.</p>
                         ) : (
