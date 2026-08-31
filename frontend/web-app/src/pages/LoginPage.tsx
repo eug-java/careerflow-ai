@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login, storeAuthTokens } from "../api/authApi";
+import { buildGitHubAuthorizeUrl, isGitHubOAuthEnabled, login, storeAuthTokens } from "../api/authApi";
+
+const githubClientId = import.meta.env.VITE_GITHUB_OAUTH_CLIENT_ID as string | undefined;
+const githubRedirectUri = `${window.location.origin}/oauth/github/callback`;
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -8,6 +11,35 @@ export default function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [githubOAuthEnabled, setGitHubOAuthEnabled] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+
+        isGitHubOAuthEnabled()
+            .then((enabled) => {
+                if (active) {
+                    setGitHubOAuthEnabled(enabled && Boolean(githubClientId));
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setGitHubOAuthEnabled(false);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    function handleGitHubSignIn() {
+        if (!githubClientId) {
+            return;
+        }
+
+        window.location.assign(buildGitHubAuthorizeUrl(githubClientId, githubRedirectUri));
+    }
 
     async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
@@ -73,6 +105,24 @@ export default function LoginPage() {
                 >
                     Sign In
                 </button>
+
+                {githubOAuthEnabled && (
+                    <>
+                        <div className="flex items-center gap-3 my-6">
+                            <div className="h-px flex-1 bg-slate-200" />
+                            <span className="text-xs uppercase tracking-wide text-slate-400">or</span>
+                            <div className="h-px flex-1 bg-slate-200" />
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGitHubSignIn}
+                            className="w-full border border-slate-300 rounded-xl py-3 hover:bg-slate-50"
+                        >
+                            Continue with GitHub
+                        </button>
+                    </>
+                )}
 
                 <p className="text-sm text-slate-500 mt-6 text-center">
                     New here?{" "}
