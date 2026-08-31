@@ -12,6 +12,7 @@ import com.careerflow.auth.dto.RegisterRequest;
 import com.careerflow.auth.service.UsernameAlreadyExistsException;
 import com.careerflow.auth.security.JwtTokenService;
 import com.careerflow.auth.security.LoginRateLimiter;
+import com.careerflow.auth.security.RefreshTokenRotationResult;
 import com.careerflow.auth.security.RefreshTokenService;
 import com.careerflow.auth.service.UserAccountService;
 import jakarta.validation.Valid;
@@ -92,8 +93,13 @@ public class AuthController {
     @PostMapping("/refresh")
     public LoginResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
         try {
-            String accessToken = refreshTokenService.refreshAccessToken(request.refreshToken());
-            return new LoginResponse(accessToken, request.refreshToken(), "Bearer", jwtTokenService.expiresInSeconds());
+            RefreshTokenRotationResult rotation = refreshTokenService.rotateRefreshToken(request.refreshToken());
+            return new LoginResponse(
+                    rotation.accessToken(),
+                    rotation.refreshToken(),
+                    "Bearer",
+                    jwtTokenService.expiresInSeconds()
+            );
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ex.getMessage());
         }

@@ -5,6 +5,7 @@ import com.careerflow.auth.dto.LoginResponse;
 import com.careerflow.auth.dto.RegisterRequest;
 import com.careerflow.auth.security.JwtTokenService;
 import com.careerflow.auth.security.LoginRateLimiter;
+import com.careerflow.auth.security.RefreshTokenRotationResult;
 import com.careerflow.auth.security.RefreshTokenService;
 import com.careerflow.auth.service.UserAccountService;
 import com.careerflow.auth.service.UsernameAlreadyExistsException;
@@ -116,8 +117,9 @@ class AuthControllerTest {
     }
 
     @Test
-    void refreshShouldReturnNewAccessTokenForValidRefreshToken() {
-        when(refreshTokenService.refreshAccessToken("refresh-token")).thenReturn("new-jwt");
+    void refreshShouldReturnRotatedTokens() {
+        when(refreshTokenService.rotateRefreshToken("refresh-token"))
+                .thenReturn(new RefreshTokenRotationResult("new-jwt", "new-refresh-token"));
         when(jwtTokenService.expiresInSeconds()).thenReturn(7200L);
 
         LoginResponse response = authController.refresh(
@@ -125,14 +127,14 @@ class AuthControllerTest {
         );
 
         assertThat(response.accessToken()).isEqualTo("new-jwt");
-        assertThat(response.refreshToken()).isEqualTo("refresh-token");
+        assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresInSeconds()).isEqualTo(7200L);
     }
 
     @Test
     void refreshShouldThrowUnauthorizedForInvalidRefreshToken() {
-        when(refreshTokenService.refreshAccessToken("bad-token"))
+        when(refreshTokenService.rotateRefreshToken("bad-token"))
                 .thenThrow(new IllegalArgumentException("Invalid or expired refresh token"));
 
         assertThatThrownBy(() -> authController.refresh(
