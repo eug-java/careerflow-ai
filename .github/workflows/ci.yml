@@ -87,9 +87,60 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: frontend/web-app
 
-      - name: Run Playwright tests
-        run: npm run test:e2e
+      - name: Run Playwright UI tests
+        run: npm run test:e2e -- --grep-invert @fullstack
         working-directory: frontend/web-app
+
+  frontend-e2e-fullstack:
+    name: Frontend E2E (Auth + Gateway)
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci-jwt-secret-for-e2e-tests-only-xx
+      CAREERFLOW_INTERNAL_API_KEY: ci-internal-key-for-e2e
+      CAREERFLOW_EMAIL_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+      CAREERFLOW_AI_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Start auth stack
+        run: |
+          docker compose -f compose.e2e.yaml up -d --build
+          for i in $(seq 1 90); do
+            if curl -sf http://localhost:8080/actuator/health >/dev/null; then
+              echo "API gateway is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API gateway did not become healthy in time"
+          docker compose -f compose.e2e.yaml logs
+          exit 1
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/web-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend/web-app
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend/web-app
+
+      - name: Run full-stack auth E2E
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
+        run: npm run test:e2e -- --grep @fullstack
+        working-directory: frontend/web-app
+
+      - name: Stop auth stack
+        if: always()
+        run: docker compose -f compose.e2e.yaml down -v
 
   docker-build:
     name: Docker Image Build
@@ -126,6 +177,7 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config >/dev/null
           docker compose -f compose.yaml config >/dev/null
+          docker compose -f compose.e2e.yaml config >/dev/null
           docker compose -f docker-compose.full.yml config >/dev/null
 
   dependency-review:

@@ -159,6 +159,7 @@ This builds and starts all 9 backend services, frontend, Postgres, Kafka, MinIO,
 | http://localhost:9001 | MinIO Console |
 | http://localhost:3001 | Grafana (admin/admin) |
 | http://localhost:9090 | Prometheus |
+| http://localhost:16686 | Jaeger UI (distributed tracing) |
 
 Demo login: `demo` / `demo`
 
@@ -209,7 +210,10 @@ Backend uses [JaCoCo](https://www.jacoco.org/) during `mvn verify`. Each module 
 make backend-verify
 ```
 
-Integration smoke test (`DocumentPipelineSmokeIT`) uses **Testcontainers** (PostgreSQL + MinIO) in `document-service`.
+Integration smoke tests use **Testcontainers**:
+
+- `DocumentPipelineSmokeIT` in `document-service` (PostgreSQL + MinIO)
+- `AuthFlowIT` in `auth-service` (register → login → refresh rotation → logout)
 
 Frontend unit tests use **Vitest**:
 
@@ -217,15 +221,27 @@ Frontend unit tests use **Vitest**:
 make frontend-test
 ```
 
-Optional Playwright E2E (requires dev server):
+Playwright E2E:
 
 ```bash
-cd frontend/web-app && npm run test:e2e
+cd frontend/web-app && npm run test:e2e          # UI-only specs
+cd frontend/web-app && npm run test:e2e:fullstack # auth flow against real API (needs compose.e2e.yaml)
 ```
+
+Full-stack auth E2E locally:
+
+```bash
+docker compose -f compose.e2e.yaml up -d --build
+# wait for http://localhost:8080/actuator/health
+cd frontend/web-app
+VITE_API_BASE_URL=http://localhost:8080 npm run test:e2e:fullstack
+```
+
+CI runs UI E2E on every push and full-stack auth E2E with `compose.e2e.yaml`.
 
 HTML coverage reports: `backend/<module>/target/site/jacoco/index.html`.
 
-CI runs backend verify, frontend lint/test/build, Docker image builds, compose validation, and dependency review on PRs.
+CI runs backend verify, frontend lint/test/build, Playwright E2E (UI + full-stack auth), Docker image builds, compose validation, and dependency review on PRs.
 
 ## Developer Commands (Makefile)
 
@@ -240,9 +256,17 @@ CI runs backend verify, frontend lint/test/build, Docker image builds, compose v
 | `make docker-build` | Build core Docker images |
 | `make compose-validate` | Validate compose files |
 
+## Kubernetes
+
+Starter manifests for auth-service, api-gateway, and frontend live in [`deploy/kubernetes/`](deploy/kubernetes/README.md). Build images, fill secrets, and apply the YAML files for a minimal cluster deployment.
+
 ## Observability
 
 All HTTP requests propagate `X-Correlation-Id` through the API gateway and microservices (MDC logging in servlet services).
+
+OpenTelemetry traces export to Jaeger when `TRACING_SAMPLING_PROBABILITY` is above zero (enabled in full `compose.yaml` stack). UI: http://localhost:16686
+
+Prometheus scrapes `/actuator/prometheus` on each service using Docker Compose **service names** as hostnames (e.g. `auth-service:8079`).
 
 ## Environment Configuration
 
@@ -269,6 +293,18 @@ Each user configures their OpenAI API key in the UI at **AI Settings** (`/settin
 Refresh tokens are stored in PostgreSQL (`careerflow_auth` on port `5437`), not in memory.
 
 WebSocket workflow status requires a valid JWT (`token` query param or `Authorization` header) matching the workflow owner.
+
+### GitHub OAuth (optional)
+
+Create a GitHub OAuth app with callback `http://localhost:5173/oauth/github/callback`, then set in `.env`:
+
+```bash
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+VITE_GITHUB_OAUTH_CLIENT_ID=your_client_id   # frontend build arg
+```
+
+Rebuild the stack so auth-service and frontend pick up the values. When configured, the login page shows **Continue with GitHub**.
 
 Refresh an expired access token:
 

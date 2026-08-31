@@ -55,4 +55,5 @@ docker-build:
 compose-validate:
 	docker compose -f docker-compose.yml config >/dev/null
 	docker compose -f compose.yaml config >/dev/null
+	docker compose -f compose.e2e.yaml config >/dev/null
 	docker compose -f docker-compose.full.yml config >/dev/null

@@ -1,0 +1,70 @@
+# Minimal stack for Playwright full-stack auth E2E (CI and local).
+#
+#   docker compose -f compose.e2e.yaml up -d --build
+#   curl http://localhost:8080/actuator/health
+#
+# Requires JWT_SECRET and internal/encryption keys (see .env.example).
+
+name: careerflow-e2e
+
+x-postgres-defaults: &postgres-defaults
+  image: postgres:16-alpine
+  restart: unless-stopped
+  environment: &postgres-env
+    POSTGRES_USER: careerflow
+    POSTGRES_PASSWORD: careerflow
+  healthcheck: &postgres-health
+    test: ["CMD-SHELL", "pg_isready -U careerflow"]
+    interval: 5s
+    timeout: 5s
+    retries: 12
+
+x-app-env: &app-env
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
+  CAREERFLOW_INTERNAL_API_KEY: ${CAREERFLOW_INTERNAL_API_KEY:?Set CAREERFLOW_INTERNAL_API_KEY in .env}
+  CAREERFLOW_EMAIL_ENCRYPTION_KEY: ${CAREERFLOW_EMAIL_ENCRYPTION_KEY:?Set CAREERFLOW_EMAIL_ENCRYPTION_KEY in .env (32 chars)}
+  CAREERFLOW_AI_ENCRYPTION_KEY: ${CAREERFLOW_AI_ENCRYPTION_KEY:?Set CAREERFLOW_AI_ENCRYPTION_KEY in .env (32 chars)}
+  TRACING_SAMPLING_PROBABILITY: "0.0"
+  CAREERFLOW_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+
+services:
+  auth-postgres:
+    <<: *postgres-defaults
+    environment:
+      <<: *postgres-env
+      POSTGRES_DB: careerflow_auth
+    ports:
+      - "5437:5432"
+    healthcheck:
+      <<: *postgres-health
+      test: ["CMD-SHELL", "pg_isready -U careerflow -d careerflow_auth"]
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: backend/auth-service/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8079:8079"
+    environment:
+      <<: *app-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-postgres:5432/careerflow_auth
+      SPRING_DATASOURCE_USERNAME: careerflow
+      SPRING_DATASOURCE_PASSWORD: careerflow
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+
+  api-gateway-service:
+    build:
+      context: .
+      dockerfile: backend/api-gateway-service/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *app-env
+      AUTH_SERVICE_URL: http://auth-service:8079
+    depends_on:
+      auth-service:
+        condition: service_started
