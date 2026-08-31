@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import AppLayout from "../layouts/AppLayout";
-import { fetchJobById, updateJob } from "../api/jobApi";
+import { fetchJobById, parseJobDescriptionWithAi, updateJob } from "../api/jobApi";
+import { useToast } from "../hooks/useToast";
 
 export default function EditJobPage() {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { pushToast } = useToast();
 
     const [title, setTitle] = useState("");
     const [companyName, setCompanyName] = useState("");
@@ -19,6 +21,8 @@ export default function EditJobPage() {
     const [remote, setRemote] = useState(false);
     const [description, setDescription] = useState("");
     const [skillsText, setSkillsText] = useState("");
+    const [rawJobDescription, setRawJobDescription] = useState("");
+    const [isParsing, setIsParsing] = useState(false);
 
     useEffect(() => {
         if (!id) {
@@ -35,11 +39,40 @@ export default function EditJobPage() {
             setCurrency(job.currency ?? "USD");
             setRemote(Boolean(job.remote));
             setDescription(job.description ?? "");
+            setRawJobDescription(job.description ?? "");
 
             const skills = job.skills ?? [];
             setSkillsText(skills.map((skill) => skill.name).join(", "));
         });
     }, [id]);
+
+    async function handleParseWithAi() {
+        if (!rawJobDescription.trim()) {
+            pushToast("error", "Paste job description first.");
+            return;
+        }
+
+        setIsParsing(true);
+        try {
+            const parsed = await parseJobDescriptionWithAi({ text: rawJobDescription });
+
+            setTitle(parsed.title ?? title);
+            setCompanyName(parsed.companyName ?? companyName);
+            setLocation(parsed.location ?? location);
+            setEmploymentType(parsed.employmentType ?? employmentType);
+            setSalaryMin(parsed.salaryMin == null ? salaryMin : String(parsed.salaryMin));
+            setSalaryMax(parsed.salaryMax == null ? salaryMax : String(parsed.salaryMax));
+            setCurrency(parsed.currency ?? currency);
+            setRemote(parsed.remote ?? remote);
+            setDescription(parsed.description ?? rawJobDescription);
+            setSkillsText(parsed.skills?.map((skill) => skill.name).join(", ") ?? skillsText);
+            pushToast("success", "Job description re-parsed with AI.");
+        } catch {
+            pushToast("error", "Failed to parse job description.");
+        } finally {
+            setIsParsing(false);
+        }
+    }
 
     async function handleSubmit(event: FormEvent) {
         event.preventDefault();
@@ -75,17 +108,38 @@ export default function EditJobPage() {
 
     return (
         <AppLayout>
-            <div className="max-w-3xl">
+            <div className="max-w-4xl">
                 <h1 className="text-4xl font-bold mb-8">Edit Job</h1>
+
+                <div className="bg-white rounded-2xl shadow p-6 mb-6">
+                    <h2 className="text-2xl font-semibold mb-2">AI job parser</h2>
+                    <p className="text-slate-500 mb-4">
+                        Update the description below and re-parse to refresh skills and metadata.
+                    </p>
+                    <textarea
+                        value={rawJobDescription}
+                        onChange={(event) => setRawJobDescription(event.target.value)}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-2 min-h-56"
+                        placeholder="Paste or edit job description here..."
+                    />
+                    <button
+                        type="button"
+                        onClick={() => void handleParseWithAi()}
+                        disabled={isParsing}
+                        className="mt-4 bg-slate-900 text-white px-5 py-3 rounded-xl hover:bg-slate-700 disabled:opacity-50"
+                    >
+                        {isParsing ? "Parsing..." : "Re-parse with AI"}
+                    </button>
+                </div>
 
                 <form
                     onSubmit={handleSubmit}
                     className="bg-white rounded-2xl shadow p-6 grid gap-5"
                 >
                     <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Job title
-            </span>
+                        <span className="block text-sm font-medium text-slate-700 mb-1">
+                            Job title
+                        </span>
                         <input
                             value={title}
                             onChange={(event) => setTitle(event.target.value)}
@@ -95,9 +149,9 @@ export default function EditJobPage() {
                     </label>
 
                     <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Company name
-            </span>
+                        <span className="block text-sm font-medium text-slate-700 mb-1">
+                            Company name
+                        </span>
                         <input
                             value={companyName}
                             onChange={(event) => setCompanyName(event.target.value)}
@@ -107,9 +161,9 @@ export default function EditJobPage() {
                     </label>
 
                     <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Location
-            </span>
+                        <span className="block text-sm font-medium text-slate-700 mb-1">
+                            Location
+                        </span>
                         <input
                             value={location}
                             onChange={(event) => setLocation(event.target.value)}
@@ -120,9 +174,9 @@ export default function EditJobPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <label>
-              <span className="block text-sm font-medium text-slate-700 mb-1">
-                Employment type
-              </span>
+                            <span className="block text-sm font-medium text-slate-700 mb-1">
+                                Employment type
+                            </span>
                             <input
                                 value={employmentType}
                                 onChange={(event) => setEmploymentType(event.target.value)}
@@ -131,9 +185,9 @@ export default function EditJobPage() {
                         </label>
 
                         <label>
-              <span className="block text-sm font-medium text-slate-700 mb-1">
-                Currency
-              </span>
+                            <span className="block text-sm font-medium text-slate-700 mb-1">
+                                Currency
+                            </span>
                             <input
                                 value={currency}
                                 onChange={(event) => setCurrency(event.target.value)}
@@ -144,9 +198,9 @@ export default function EditJobPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <label>
-              <span className="block text-sm font-medium text-slate-700 mb-1">
-                Salary min
-              </span>
+                            <span className="block text-sm font-medium text-slate-700 mb-1">
+                                Salary min
+                            </span>
                             <input
                                 type="number"
                                 value={salaryMin}
@@ -156,9 +210,9 @@ export default function EditJobPage() {
                         </label>
 
                         <label>
-              <span className="block text-sm font-medium text-slate-700 mb-1">
-                Salary max
-              </span>
+                            <span className="block text-sm font-medium text-slate-700 mb-1">
+                                Salary max
+                            </span>
                             <input
                                 type="number"
                                 value={salaryMax}
@@ -178,9 +232,9 @@ export default function EditJobPage() {
                     </label>
 
                     <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Required skills, comma separated
-            </span>
+                        <span className="block text-sm font-medium text-slate-700 mb-1">
+                            Required skills, comma separated
+                        </span>
                         <input
                             value={skillsText}
                             onChange={(event) => setSkillsText(event.target.value)}
@@ -189,9 +243,9 @@ export default function EditJobPage() {
                     </label>
 
                     <label>
-            <span className="block text-sm font-medium text-slate-700 mb-1">
-              Job description
-            </span>
+                        <span className="block text-sm font-medium text-slate-700 mb-1">
+                            Job description
+                        </span>
                         <textarea
                             value={description}
                             onChange={(event) => setDescription(event.target.value)}
