@@ -1,6 +1,9 @@
 careerflow:
   jwt:
     secret: ${JWT_SECRET}
+  internal-api-key: ${CAREERFLOW_INTERNAL_API_KEY}
+  credentials:
+    encryption-key: ${CAREERFLOW_AI_ENCRYPTION_KEY}
 
 springdoc:
   api-docs:
@@ -12,4 +15,3 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-
