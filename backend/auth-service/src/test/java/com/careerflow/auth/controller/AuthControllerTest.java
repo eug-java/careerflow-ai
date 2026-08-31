@@ -1,5 +1,6 @@
 package com.careerflow.auth.controller;
 
+import com.careerflow.auth.dto.GitHubOAuthRequest;
 import com.careerflow.auth.dto.LoginRequest;
 import com.careerflow.auth.dto.LoginResponse;
 import com.careerflow.auth.dto.RegisterRequest;
@@ -7,6 +8,7 @@ import com.careerflow.auth.security.JwtTokenService;
 import com.careerflow.auth.security.LoginRateLimiter;
 import com.careerflow.auth.security.RefreshTokenRotationResult;
 import com.careerflow.auth.security.RefreshTokenService;
+import com.careerflow.auth.service.GitHubOAuthService;
 import com.careerflow.auth.service.UserAccountService;
 import com.careerflow.auth.service.UsernameAlreadyExistsException;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,8 +45,42 @@ class AuthControllerTest {
     @Mock
     private LoginRateLimiter loginRateLimiter;
 
+    @Mock
+    private GitHubOAuthService gitHubOAuthService;
+
     @InjectMocks
     private AuthController authController;
+
+    @Test
+    void githubOAuthEnabledShouldReflectServiceState() {
+        when(gitHubOAuthService.isEnabled()).thenReturn(true);
+
+        Map<String, Boolean> response = authController.githubOAuthEnabled();
+
+        assertThat(response).containsEntry("enabled", true);
+    }
+
+    @Test
+    void githubOAuthShouldReturnTokensWhenEnabled() {
+        LoginResponse expected = new LoginResponse("jwt", "refresh", "Bearer", 7200L);
+        when(gitHubOAuthService.isEnabled()).thenReturn(true);
+        when(gitHubOAuthService.authenticate("auth-code")).thenReturn(expected);
+
+        LoginResponse response = authController.githubOAuth(new GitHubOAuthRequest("auth-code"));
+
+        assertThat(response).isEqualTo(expected);
+    }
+
+    @Test
+    void githubOAuthShouldReturnNotFoundWhenDisabled() {
+        when(gitHubOAuthService.isEnabled()).thenReturn(false);
+
+        assertThatThrownBy(() -> authController.githubOAuth(new GitHubOAuthRequest("auth-code")))
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex -> {
+                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(ex.getReason()).isEqualTo("GitHub OAuth is not configured");
+                });
+    }
 
     @Test
     void registerShouldCreateAccountAndReturnTokens() {

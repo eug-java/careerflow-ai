@@ -23,6 +23,11 @@ careerflow:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}
     issuer: careerflow-ai
     expiration-minutes: 120
+  oauth:
+    github:
+      client-id: ${GITHUB_CLIENT_ID:}
+      client-secret: ${GITHUB_CLIENT_SECRET:}
+      redirect-uri: ${GITHUB_REDIRECT_URI:http://localhost:5173/oauth/github/callback}
 
 management:
   endpoints:

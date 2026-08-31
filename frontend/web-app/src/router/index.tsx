@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import ApplicationsPage from "../pages/ApplicationsPage";
+import GitHubOAuthCallbackPage from "../pages/GitHubOAuthCallbackPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import DashboardPage from "../pages/DashboardPage";
@@ -38,6 +39,14 @@ export const router = createBrowserRouter([
         element: (
             <GuestRoute>
                 <RegisterPage />
+            </GuestRoute>
+        ),
+    },
+    {
+        path: "/oauth/github/callback",
+        element: (
+            <GuestRoute>
+                <GitHubOAuthCallbackPage />
             </GuestRoute>
         ),
     },

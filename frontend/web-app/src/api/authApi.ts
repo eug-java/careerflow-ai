@@ -7,6 +7,29 @@ export interface LoginResponse {
     expiresInSeconds: number;
 }
 
+export async function isGitHubOAuthEnabled(): Promise<boolean> {
+    try {
+        const response = await apiClient.get<{ enabled: boolean }>("/api/v1/auth/oauth/github/enabled");
+        return response.data.enabled;
+    } catch {
+        return false;
+    }
+}
+
+export async function exchangeGitHubCode(code: string): Promise<LoginResponse> {
+    const response = await apiClient.post<LoginResponse>("/api/v1/auth/oauth/github", { code });
+    return response.data;
+}
+
+export function buildGitHubAuthorizeUrl(clientId: string, redirectUri: string): string {
+    const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        scope: "read:user",
+    });
+    return `https://github.com/login/oauth/authorize?${params.toString()}`;
+}
+
 export async function login(username: string, password: string): Promise<LoginResponse> {
     const response = await apiClient.post<LoginResponse>("/api/v1/auth/login", {
         username,
