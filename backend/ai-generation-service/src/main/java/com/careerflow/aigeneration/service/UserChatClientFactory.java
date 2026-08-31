@@ -2,7 +2,7 @@ package com.careerflow.aigeneration.service;
 
 import com.careerflow.aigeneration.entity.AiCredentialEntity;
 import com.careerflow.aigeneration.repository.AiCredentialRepository;
-import com.careerflow.aigeneration.security.CredentialEncryptor;
+import com.careerflow.common.security.CredentialEncryptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;

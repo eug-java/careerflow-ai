@@ -4,7 +4,7 @@ import com.careerflow.aigeneration.dto.AiAccountResponse;
 import com.careerflow.aigeneration.dto.UpsertAiAccountRequest;
 import com.careerflow.aigeneration.entity.AiCredentialEntity;
 import com.careerflow.aigeneration.repository.AiCredentialRepository;
-import com.careerflow.aigeneration.security.CredentialEncryptor;
+import com.careerflow.common.security.CredentialEncryptor;
 import com.careerflow.common.test.TestAuthSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

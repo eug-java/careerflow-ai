@@ -22,7 +22,7 @@ careerflow:
   internal-api-key: ${CAREERFLOW_INTERNAL_API_KEY:local-internal-key}
   jwt:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}
-  email:
+  credentials:
     encryption-key: ${CAREERFLOW_EMAIL_ENCRYPTION_KEY:0123456789abcdef0123456789abcdef}
   services:
     document-service-url: ${DOCUMENT_SERVICE_URL:http://localhost:8085}

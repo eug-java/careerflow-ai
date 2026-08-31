@@ -32,6 +32,11 @@ public class RefreshTokenService {
     }
 
     @Transactional
+    public void revokeRefreshToken(String refreshToken) {
+        repository.deleteById(refreshToken);
+    }
+
+    @Transactional
     public String refreshAccessToken(String refreshToken) {
         RefreshTokenEntity entity = repository.findById(refreshToken).orElse(null);
         if (entity == null || entity.getExpiresAt().isBefore(Instant.now())) {

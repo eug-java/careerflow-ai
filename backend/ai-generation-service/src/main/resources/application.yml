@@ -29,8 +29,9 @@ careerflow:
   internal-api-key: ${CAREERFLOW_INTERNAL_API_KEY:local-internal-key}
   jwt:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me}
-  ai:
+  credentials:
     encryption-key: ${CAREERFLOW_AI_ENCRYPTION_KEY:0123456789abcdef0123456789abcdef}
+  ai:
     fallback-api-key: ${OPENAI_API_KEY:}
   services:
     profile-service-url: ${PROFILE_SERVICE_URL:http://localhost:8081}

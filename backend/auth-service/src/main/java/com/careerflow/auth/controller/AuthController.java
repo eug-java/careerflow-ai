@@ -9,6 +9,7 @@ import com.careerflow.auth.dto.LoginRequest;
 import com.careerflow.auth.dto.LoginResponse;
 import com.careerflow.auth.dto.RefreshTokenRequest;
 import com.careerflow.auth.security.JwtTokenService;
+import com.careerflow.auth.security.LoginRateLimiter;
 import com.careerflow.auth.security.RefreshTokenService;
 import com.careerflow.auth.service.UserAccountService;
 import jakarta.validation.Valid;
@@ -25,24 +26,30 @@ public class AuthController {
     private final JwtTokenService jwtTokenService;
     private final RefreshTokenService refreshTokenService;
     private final UserAccountService userAccountService;
+    private final LoginRateLimiter loginRateLimiter;
 
     public AuthController(
             JwtTokenService jwtTokenService,
             RefreshTokenService refreshTokenService,
-            UserAccountService userAccountService
+            UserAccountService userAccountService,
+            LoginRateLimiter loginRateLimiter
     ) {
         this.jwtTokenService = jwtTokenService;
         this.refreshTokenService = refreshTokenService;
         this.userAccountService = userAccountService;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+        loginRateLimiter.checkAllowed(request.username());
         UUID userId;
         try {
             userId = userAccountService.authenticate(request.username(), request.password());
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
         }
 
         String accessToken = jwtTokenService.generateToken(request.username(), userId);
@@ -64,5 +71,11 @@ public class AuthController {
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ex.getMessage());
         }
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@Valid @RequestBody RefreshTokenRequest request) {
+        refreshTokenService.revokeRefreshToken(request.refreshToken());
     }
 }

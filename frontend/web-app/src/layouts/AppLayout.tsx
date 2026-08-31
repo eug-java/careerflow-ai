@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import { logout } from "../api/authApi";
 
 interface Props {
     children: ReactNode;
@@ -57,7 +58,7 @@ export default function AppLayout({ children }: Props) {
 }
 
 function handleLogout() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    window.location.href = "/login";
+    void logout().finally(() => {
+        window.location.href = "/login";
+    });
 }

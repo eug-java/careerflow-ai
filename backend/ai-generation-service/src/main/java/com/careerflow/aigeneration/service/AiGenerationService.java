@@ -14,6 +14,7 @@ import com.careerflow.aigeneration.dto.GenerateDocumentRequest;
 import com.careerflow.aigeneration.dto.GenerateDocumentResponse;
 import com.careerflow.common.event.DocumentGeneratedEvent;
 import com.careerflow.common.security.CurrentUserProvider;
+import com.careerflow.common.security.InternalAuthSupport;
 import com.careerflow.aigeneration.event.DocumentGeneratedEventPublisher;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -161,7 +162,7 @@ public class AiGenerationService {
     }
 
     private UUID resolveUserId(GenerateDocumentRequest request) {
-        if (request.ownerId() != null) {
+        if (InternalAuthSupport.isInternalCall() && request.ownerId() != null) {
             return request.ownerId();
         }
         return CurrentUserProvider.requireUserId();

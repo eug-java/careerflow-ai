@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 
 interface CardProps {
@@ -30,12 +31,12 @@ export function KpiCard({ label, value, hint, href, accent = "text-slate-900" }:
 
     if (href) {
         return (
-            <a
-                href={href}
+            <Link
+                to={href}
                 className="bg-white rounded-2xl shadow p-6 hover:shadow-md transition block"
             >
                 {content}
-            </a>
+            </Link>
         );
     }
 
@@ -58,12 +59,38 @@ export function EmptyState({
             <h3 className="text-xl font-semibold text-slate-800">{title}</h3>
             <p className="text-slate-500 mt-2 max-w-md mx-auto">{description}</p>
             {actionLabel && actionHref && (
-                <a
-                    href={actionHref}
+                <Link
+                    to={actionHref}
                     className="inline-block mt-6 bg-slate-900 text-white px-5 py-2 rounded-xl hover:bg-slate-700"
                 >
                     {actionLabel}
-                </a>
+                </Link>
+            )}
+        </div>
+    );
+}
+
+export function QueryErrorState({
+    title = "Unable to load data",
+    description = "Check that backend services are running and try refreshing the page.",
+    onRetry,
+}: {
+    title?: string;
+    description?: string;
+    onRetry?: () => void;
+}) {
+    return (
+        <div className="bg-white rounded-2xl shadow p-10 text-center">
+            <h3 className="text-xl font-semibold text-slate-800">{title}</h3>
+            <p className="text-slate-500 mt-2 max-w-md mx-auto">{description}</p>
+            {onRetry && (
+                <button
+                    type="button"
+                    onClick={onRetry}
+                    className="inline-block mt-6 bg-slate-900 text-white px-5 py-2 rounded-xl hover:bg-slate-700"
+                >
+                    Retry
+                </button>
             )}
         </div>
     );
@@ -78,6 +105,17 @@ export function LoadingGrid({ count = 4 }: { count?: number }) {
                     className="bg-white rounded-2xl shadow p-6 animate-pulse h-28"
                 />
             ))}
+        </div>
+    );
+}
+
+export function PageLoadingState({ label = "Loading..." }: { label?: string }) {
+    return (
+        <div className="min-h-[40vh] flex items-center justify-center">
+            <div className="text-center">
+                <div className="mx-auto h-10 w-10 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin" />
+                <p className="text-slate-500 mt-4">{label}</p>
+            </div>
         </div>
     );
 }

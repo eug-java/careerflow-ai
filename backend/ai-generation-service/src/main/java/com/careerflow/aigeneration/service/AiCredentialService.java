@@ -6,7 +6,7 @@ import com.careerflow.aigeneration.dto.AiConnectionTestResponse;
 import com.careerflow.aigeneration.dto.UpsertAiAccountRequest;
 import com.careerflow.aigeneration.entity.AiCredentialEntity;
 import com.careerflow.aigeneration.repository.AiCredentialRepository;
-import com.careerflow.aigeneration.security.CredentialEncryptor;
+import com.careerflow.common.security.CredentialEncryptor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

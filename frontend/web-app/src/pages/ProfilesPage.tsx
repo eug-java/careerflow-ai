@@ -3,11 +3,11 @@ import AppLayout from "../layouts/AppLayout";
 import { deleteProfile } from "../api/profileApi";
 import { useProfilesQuery } from "../hooks/useDashboardQueries";
 import { calculateProfileReadiness } from "../lib/dashboardUtils";
-import { Badge, EmptyState, LoadingGrid } from "../components/ui/Card";
+import { Badge, EmptyState, LoadingGrid, QueryErrorState } from "../components/ui/Card";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function ProfilesPage() {
-    const { data: profiles = [], isLoading } = useProfilesQuery();
+    const { data: profiles = [], isLoading, isError, refetch } = useProfilesQuery();
     const queryClient = useQueryClient();
 
     async function handleDelete(profileId: string) {
@@ -39,6 +39,8 @@ export default function ProfilesPage() {
 
             {isLoading ? (
                 <LoadingGrid count={3} />
+            ) : isError ? (
+                <QueryErrorState onRetry={() => void refetch()} />
             ) : profiles.length === 0 ? (
                 <EmptyState
                     title="No profiles yet"

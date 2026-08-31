@@ -24,6 +24,19 @@ export async function refreshAccessToken(refreshToken: string): Promise<LoginRes
     return response.data;
 }
 
+export async function logout(): Promise<void> {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+        try {
+            await apiClient.post("/api/v1/auth/logout", { refreshToken });
+        } catch {
+            // Best-effort server-side revocation; local tokens are cleared regardless.
+        }
+    }
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+}
+
 export function storeAuthTokens(result: LoginResponse) {
     localStorage.setItem("accessToken", result.accessToken);
     localStorage.setItem("refreshToken", result.refreshToken);

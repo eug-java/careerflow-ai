@@ -8,7 +8,7 @@ import {
     downloadDocumentDocx,
 } from "../api/documentApi";
 import { useDocumentsQuery, useJobsQuery, useProfilesQuery } from "../hooks/useDashboardQueries";
-import { Badge, EmptyState, LoadingGrid } from "../components/ui/Card";
+import { Badge, EmptyState, LoadingGrid, QueryErrorState } from "../components/ui/Card";
 import { formatRelativeTime } from "../lib/dashboardUtils";
 import { useToast } from "../hooks/useToast";
 
@@ -22,7 +22,7 @@ export default function DocumentsPage() {
 
     const { data: profiles = [] } = useProfilesQuery();
     const { data: jobs = [] } = useJobsQuery();
-    const { data: documents = [], isLoading } = useDocumentsQuery(
+    const { data: documents = [], isLoading, isError, refetch } = useDocumentsQuery(
         profileFilter || undefined,
         jobFilter || undefined
     );
@@ -97,6 +97,8 @@ export default function DocumentsPage() {
 
             {isLoading ? (
                 <LoadingGrid count={2} />
+            ) : isError ? (
+                <QueryErrorState onRetry={() => void refetch()} />
             ) : documents.length === 0 ? (
                 <EmptyState
                     title="No documents yet"
