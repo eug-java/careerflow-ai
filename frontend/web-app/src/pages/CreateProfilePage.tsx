@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import { createProfile } from "../api/profileApi";
-import { parseResumeFile } from "../api/generationApi";
+import { parseResumeFile, parseResumeText } from "../api/generationApi";
 import ProfileFormFields, { type ProfileFormState } from "../components/profile/ProfileFormFields";
-import { createEmptyProfileFormState } from "../components/profile/profileFormState";
+import { createEmptyProfileFormState, mergeParsedResume } from "../components/profile/profileFormState";
 import { useToast } from "../hooks/useToast";
 
 export default function CreateProfilePage() {
@@ -14,25 +14,17 @@ export default function CreateProfilePage() {
     const [parsingResume, setParsingResume] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    async function handleParseResume(file: File) {
+    async function applyParsedResume(source: "file" | "text", input: File | string) {
         setParsingResume(true);
         try {
-            const parsed = await parseResumeFile(file);
-            setForm((current) => ({
-                ...current,
-                fullName: parsed.fullName ?? current.fullName,
-                professionalTitle: parsed.professionalTitle ?? current.professionalTitle,
-                email: parsed.email ?? current.email,
-                phone: parsed.phone ?? current.phone,
-                locationPreference: parsed.locationPreference ?? current.locationPreference,
-                location: parsed.location ?? current.location,
-                summary: parsed.summary ?? current.summary,
-                skills: parsed.skills ?? current.skills,
-                experiences: parsed.experiences ?? current.experiences,
-            }));
+            const parsed =
+                source === "file"
+                    ? await parseResumeFile(input as File)
+                    : await parseResumeText(input as string);
+            setForm((current) => mergeParsedResume(current, parsed));
             pushToast("success", "Resume parsed. Review the fields before saving.");
         } catch {
-            pushToast("error", "Failed to parse resume. Try another file or fill manually.");
+            pushToast("error", "Failed to parse resume. Try another input or fill manually.");
         } finally {
             setParsingResume(false);
         }
@@ -60,7 +52,8 @@ export default function CreateProfilePage() {
                     <ProfileFormFields
                         value={form}
                         onChange={setForm}
-                        onParseResumeFile={handleParseResume}
+                        onParseResumeFile={(file) => applyParsedResume("file", file)}
+                        onParseResumeText={(text) => applyParsedResume("text", text)}
                         parsingResume={parsingResume}
                     />
                     <div className="flex gap-3">

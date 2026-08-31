@@ -21,6 +21,7 @@ interface Props {
     value: ProfileFormState;
     onChange: (next: ProfileFormState) => void;
     onParseResumeFile?: (file: File) => Promise<void>;
+    onParseResumeText?: (text: string) => Promise<void>;
     parsingResume?: boolean;
 }
 
@@ -39,9 +40,11 @@ export default function ProfileFormFields({
     value,
     onChange,
     onParseResumeFile,
+    onParseResumeText,
     parsingResume = false,
 }: Props) {
     const [skillDraft, setSkillDraft] = useState(emptySkill());
+    const [resumeText, setResumeText] = useState("");
 
     const locationOptions = useMemo(
         () => locationOptionsForPreference(value.locationPreference),
@@ -62,27 +65,55 @@ export default function ProfileFormFields({
 
     return (
         <div className="grid gap-5">
-            {onParseResumeFile && (
-                <label className="block rounded-xl border border-dashed border-slate-300 p-4 bg-slate-50">
-                    <span className="block text-sm font-medium text-slate-700 mb-2">
-                        Upload control resume (PDF, DOCX, TXT)
-                    </span>
-                    <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.txt,.md"
-                        disabled={parsingResume}
-                        onChange={(event) => {
-                            const file = event.target.files?.[0];
-                            if (file) {
-                                void onParseResumeFile(file);
-                            }
-                        }}
-                        className="block w-full text-sm"
-                    />
-                    <p className="text-xs text-slate-500 mt-2">
+            {(onParseResumeFile || onParseResumeText) && (
+                <div className="rounded-xl border border-dashed border-slate-300 p-4 bg-slate-50 grid gap-4">
+                    {onParseResumeFile && (
+                        <label className="block">
+                            <span className="block text-sm font-medium text-slate-700 mb-2">
+                                Upload control resume (PDF, DOCX, TXT)
+                            </span>
+                            <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,.txt,.md"
+                                disabled={parsingResume}
+                                onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    if (file) {
+                                        void onParseResumeFile(file);
+                                    }
+                                }}
+                                className="block w-full text-sm"
+                            />
+                        </label>
+                    )}
+
+                    {onParseResumeText && (
+                        <div>
+                            <span className="block text-sm font-medium text-slate-700 mb-2">
+                                Or paste resume text
+                            </span>
+                            <textarea
+                                value={resumeText}
+                                onChange={(event) => setResumeText(event.target.value)}
+                                disabled={parsingResume}
+                                className="w-full border border-slate-300 rounded-xl px-4 py-2 min-h-40"
+                                placeholder="Paste resume content here..."
+                            />
+                            <button
+                                type="button"
+                                disabled={parsingResume || !resumeText.trim()}
+                                onClick={() => void onParseResumeText(resumeText)}
+                                className="mt-3 bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 disabled:opacity-50 text-sm"
+                            >
+                                {parsingResume ? "Parsing..." : "Parse resume text"}
+                            </button>
+                        </div>
+                    )}
+
+                    <p className="text-xs text-slate-500">
                         We parse location, skills, and experience to pre-fill your profile.
                     </p>
-                </label>
+                </div>
             )}
 
             <label>
