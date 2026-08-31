@@ -16,18 +16,30 @@ import EmailInboxPage from "../pages/EmailInboxPage";
 import EmailSettingsPage from "../pages/EmailSettingsPage";
 import AiSettingsPage from "../pages/AiSettingsPage";
 import ProtectedRoute from "./ProtectedRoute";
+import GuestRoute from "./GuestRoute";
 import CreateJobPage from "../pages/CreateJobPage";
 import EditProfilePage from "../pages/EditProfilePage";
 import EditJobPage from "../pages/EditJobPage";
+import WorkflowsPage from "../pages/WorkflowsPage";
+import SkillGapInsightsPage from "../pages/SkillGapInsightsPage";
+import NotFoundPage from "../pages/NotFoundPage";
 
 export const router = createBrowserRouter([
     {
         path: "/login",
-        element: <LoginPage />,
+        element: (
+            <GuestRoute>
+                <LoginPage />
+            </GuestRoute>
+        ),
     },
     {
         path: "/register",
-        element: <RegisterPage />,
+        element: (
+            <GuestRoute>
+                <RegisterPage />
+            </GuestRoute>
+        ),
     },
     {
         path: "/",
@@ -126,6 +138,22 @@ export const router = createBrowserRouter([
         ),
     },
     {
+        path: "/workflows",
+        element: (
+            <ProtectedRoute>
+                <WorkflowsPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/insights",
+        element: (
+            <ProtectedRoute>
+                <SkillGapInsightsPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
         path: "/documents",
         element: (
             <ProtectedRoute>
@@ -156,5 +184,9 @@ export const router = createBrowserRouter([
                 <AiSettingsPage />
             </ProtectedRoute>
         ),
+    },
+    {
+        path: "*",
+        element: <NotFoundPage />,
     },
 ]);
