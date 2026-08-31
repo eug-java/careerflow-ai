@@ -9,7 +9,7 @@ import com.careerflow.email.entity.EmailAccountEntity;
 import com.careerflow.email.entity.InboxMessageEntity;
 import com.careerflow.email.repository.EmailAccountRepository;
 import com.careerflow.email.repository.InboxMessageRepository;
-import com.careerflow.email.security.CredentialEncryptor;
+import com.careerflow.common.security.CredentialEncryptor;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;

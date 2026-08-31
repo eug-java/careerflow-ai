@@ -1,4 +1,4 @@
-package com.careerflow.aigeneration.client;
+package com.careerflow.workflow.client;
 
 import com.careerflow.common.client.ServiceWebClientFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,14 +20,6 @@ public class ServiceClientConfig {
     @Bean
     public WebClient jobWebClient(
             @Value("${careerflow.services.job-service-url}") String baseUrl,
-            ServiceWebClientFactory serviceWebClientFactory
-    ) {
-        return serviceWebClientFactory.create(baseUrl);
-    }
-
-    @Bean
-    public WebClient documentWebClient(
-            @Value("${careerflow.services.document-service-url}") String baseUrl,
             ServiceWebClientFactory serviceWebClientFactory
     ) {
         return serviceWebClientFactory.create(baseUrl);

@@ -1,6 +1,8 @@
 package com.careerflow.workflow.controller;
 
 import com.careerflow.common.test.TestAuthSupport;
+import com.careerflow.workflow.client.JobClient;
+import com.careerflow.workflow.client.ProfileClient;
 import com.careerflow.workflow.dto.WorkflowListItem;
 import com.careerflow.workflow.dto.WorkflowStatus;
 import com.careerflow.workflow.service.WorkflowStatusService;
@@ -26,6 +28,12 @@ class WorkflowControllerTest {
 
     @Mock
     private WorkflowStatusService workflowStatusService;
+
+    @Mock
+    private ProfileClient profileClient;
+
+    @Mock
+    private JobClient jobClient;
 
     @InjectMocks
     private WorkflowController controller;

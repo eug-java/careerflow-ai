@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { ensureValidAccessToken } from "../api/authApi";
+import { PageLoadingState } from "../components/ui/Card";
 
 interface Props {
     children: ReactNode;
@@ -36,7 +37,7 @@ export default function ProtectedRoute({ children }: Props) {
     }, []);
 
     if (!ready) {
-        return null;
+        return <PageLoadingState label="Checking session..." />;
     }
 
     if (!allowed) {

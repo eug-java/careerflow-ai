@@ -8,6 +8,7 @@ import CreateProfilePage from "../pages/CreateProfilePage";
 import JobsPage from "../pages/JobsPage";
 import JobDetailPage from "../pages/JobDetailPage";
 import MatchHistoryPage from "../pages/MatchHistoryPage";
+import MatchDetailPage from "../pages/MatchDetailPage";
 import DocumentsPage from "../pages/DocumentsPage";
 import EmailInboxPage from "../pages/EmailInboxPage";
 import EmailSettingsPage from "../pages/EmailSettingsPage";
@@ -99,6 +100,14 @@ export const router = createBrowserRouter([
         element: (
             <ProtectedRoute>
                 <MatchHistoryPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/matches/:id",
+        element: (
+            <ProtectedRoute>
+                <MatchDetailPage />
             </ProtectedRoute>
         ),
     },

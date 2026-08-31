@@ -3,6 +3,7 @@ package com.careerflow.auth.controller;
 import com.careerflow.auth.dto.LoginRequest;
 import com.careerflow.auth.dto.LoginResponse;
 import com.careerflow.auth.security.JwtTokenService;
+import com.careerflow.auth.security.LoginRateLimiter;
 import com.careerflow.auth.security.RefreshTokenService;
 import com.careerflow.auth.service.UserAccountService;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ class AuthControllerTest {
 
     @Mock
     private UserAccountService userAccountService;
+
+    @Mock
+    private LoginRateLimiter loginRateLimiter;
 
     @InjectMocks
     private AuthController authController;
@@ -107,5 +111,12 @@ class AuthControllerTest {
             assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
             assertThat(ex.getReason()).isEqualTo("Invalid or expired refresh token");
         });
+    }
+
+    @Test
+    void logoutShouldRevokeRefreshToken() {
+        authController.logout(new com.careerflow.auth.dto.RefreshTokenRequest("refresh-token"));
+
+        verify(refreshTokenService).revokeRefreshToken("refresh-token");
     }
 }

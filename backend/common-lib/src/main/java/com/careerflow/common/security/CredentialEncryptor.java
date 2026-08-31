@@ -1,4 +1,4 @@
-package com.careerflow.email.security;
+package com.careerflow.common.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,18 +21,8 @@ public class CredentialEncryptor {
     private final SecretKeySpec secretKey;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public CredentialEncryptor(@Value("${careerflow.email.encryption-key}") String encryptionKey) {
-        byte[] keyBytes = encryptionKey.getBytes(StandardCharsets.UTF_8);
-        if (keyBytes.length < 32) {
-            byte[] padded = new byte[32];
-            System.arraycopy(keyBytes, 0, padded, 0, keyBytes.length);
-            keyBytes = padded;
-        } else if (keyBytes.length > 32) {
-            byte[] trimmed = new byte[32];
-            System.arraycopy(keyBytes, 0, trimmed, 0, 32);
-            keyBytes = trimmed;
-        }
-        this.secretKey = new SecretKeySpec(keyBytes, "AES");
+    public CredentialEncryptor(@Value("${careerflow.credentials.encryption-key}") String encryptionKey) {
+        this.secretKey = new SecretKeySpec(normalizeKey(encryptionKey), "AES");
     }
 
     public String encrypt(String plainText) {
@@ -65,5 +55,20 @@ public class CredentialEncryptor {
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to decrypt credential", ex);
         }
+    }
+
+    private static byte[] normalizeKey(String encryptionKey) {
+        byte[] keyBytes = encryptionKey.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            byte[] padded = new byte[32];
+            System.arraycopy(keyBytes, 0, padded, 0, keyBytes.length);
+            return padded;
+        }
+        if (keyBytes.length > 32) {
+            byte[] trimmed = new byte[32];
+            System.arraycopy(keyBytes, 0, trimmed, 0, 32);
+            return trimmed;
+        }
+        return keyBytes;
     }
 }

@@ -22,6 +22,7 @@ import { QuickActionsPanel } from "../components/dashboard/QuickActionsPanel";
 import { DocumentsSnapshot } from "../components/dashboard/DocumentsSnapshot";
 import { MatchDistributionChart } from "../components/dashboard/MatchDistributionChart";
 import { EmailSnapshot } from "../components/dashboard/EmailSnapshot";
+import { AiOnboardingBanner } from "../components/dashboard/AiOnboardingBanner";
 
 export default function DashboardPage() {
     const { profiles, jobs, matches, documents, workflows, isLoading, isError } =
@@ -59,6 +60,7 @@ export default function DashboardPage() {
 
     return (
         <AppLayout>
+            <AiOnboardingBanner />
             <div className="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
                 <div>
                     <p className="text-slate-500">{greetingName()} 👋</p>

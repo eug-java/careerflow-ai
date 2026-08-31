@@ -1,6 +1,6 @@
 package com.careerflow.matching.client;
 
-import com.careerflow.common.client.InternalClientHeaders;
+import com.careerflow.common.client.ServiceWebClientFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,22 +12,16 @@ public class ServiceClientConfig {
     @Bean
     public WebClient profileWebClient(
             @Value("${careerflow.services.profile-service-url}") String baseUrl,
-            InternalClientHeaders internalClientHeaders
+            ServiceWebClientFactory serviceWebClientFactory
     ) {
-        return WebClient.builder()
-                .baseUrl(baseUrl)
-                .defaultHeader(InternalClientHeaders.HEADER, internalClientHeaders.apiKey())
-                .build();
+        return serviceWebClientFactory.create(baseUrl);
     }
 
     @Bean
     public WebClient jobWebClient(
             @Value("${careerflow.services.job-service-url}") String baseUrl,
-            InternalClientHeaders internalClientHeaders
+            ServiceWebClientFactory serviceWebClientFactory
     ) {
-        return WebClient.builder()
-                .baseUrl(baseUrl)
-                .defaultHeader(InternalClientHeaders.HEADER, internalClientHeaders.apiKey())
-                .build();
+        return serviceWebClientFactory.create(baseUrl);
     }
 }

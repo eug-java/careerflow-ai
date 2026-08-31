@@ -1,50 +1,57 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import AppLayout from "../layouts/AppLayout";
 import { deleteJob } from "../api/jobApi";
 import { calculateMatch } from "../api/matchingApi";
+import { generateDocumentPreview } from "../api/generationApi";
 import { startDocumentGenerationWorkflow } from "../api/workflowApi";
-import { connectWorkflowStatusSocket } from "../api/workflowSocket";
 import { useJobsQuery, useProfilesQuery, useMatchesQuery } from "../hooks/useDashboardQueries";
-import { Badge, EmptyState, LoadingGrid, ScoreBar } from "../components/ui/Card";
+import { useWorkflowStatus } from "../hooks/useWorkflowStatus";
+import { Badge, EmptyState, LoadingGrid, QueryErrorState, ScoreBar } from "../components/ui/Card";
 import { useToast } from "../hooks/useToast";
-import { useEffect } from "react";
 
 export default function JobsPage() {
-    const { data: jobs = [], isLoading: jobsLoading } = useJobsQuery();
-    const { data: profiles = [], isLoading: profilesLoading } = useProfilesQuery();
+    const {
+        data: jobs = [],
+        isLoading: jobsLoading,
+        isError: jobsError,
+        refetch: refetchJobs,
+    } = useJobsQuery();
+    const {
+        data: profiles = [],
+        isLoading: profilesLoading,
+        isError: profilesError,
+        refetch: refetchProfiles,
+    } = useProfilesQuery();
     const { data: matches = [] } = useMatchesQuery();
     const queryClient = useQueryClient();
     const { pushToast } = useToast();
 
     const [selectedProfileId, setSelectedProfileId] = useState("");
-    const [workflowStatus, setWorkflowStatus] = useState<string>("");
     const [currentProcessInstanceKey, setCurrentProcessInstanceKey] = useState<number | null>(null);
+    const [previewContent, setPreviewContent] = useState<string | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
 
     const activeProfileId = selectedProfileId || profiles[0]?.id || "";
 
-    useEffect(() => {
-        if (!currentProcessInstanceKey) {
-            return;
-        }
+    const onWorkflowCompleted = useCallback(() => {
+        pushToast("success", "Document generation completed.");
+        void queryClient.invalidateQueries({ queryKey: ["documents"] });
+        void queryClient.invalidateQueries({ queryKey: ["workflows"] });
+    }, [pushToast, queryClient]);
 
-        const socket = connectWorkflowStatusSocket(currentProcessInstanceKey, (statusMessage) => {
-            setWorkflowStatus(statusMessage.status);
-            if (statusMessage.status === "COMPLETED") {
-                pushToast("success", "Document generation completed.");
-                void queryClient.invalidateQueries({ queryKey: ["documents"] });
-                void queryClient.invalidateQueries({ queryKey: ["workflows"] });
-            }
-            if (statusMessage.status === "FAILED") {
-                pushToast("error", statusMessage.message || "Workflow failed.");
-            }
-        });
+    const onWorkflowFailed = useCallback(
+        (message?: string) => {
+            pushToast("error", message || "Workflow failed.");
+        },
+        [pushToast]
+    );
 
-        return () => {
-            socket.close();
-        };
-    }, [currentProcessInstanceKey, pushToast, queryClient]);
+    const workflowStatus = useWorkflowStatus(currentProcessInstanceKey, {
+        onCompleted: onWorkflowCompleted,
+        onFailed: onWorkflowFailed,
+    });
 
     function getMatchForJob(jobId: string) {
         if (!activeProfileId) {
@@ -90,7 +97,6 @@ export default function JobsPage() {
                 documentType,
             });
             setCurrentProcessInstanceKey(workflow.processInstanceKey);
-            setWorkflowStatus("RUNNING");
             await queryClient.invalidateQueries({ queryKey: ["workflows"] });
             pushToast("info", "Document generation started.");
         } catch (err) {
@@ -98,7 +104,28 @@ export default function JobsPage() {
         }
     }
 
+    async function handlePreview(jobId: string) {
+        if (!activeProfileId) {
+            pushToast("error", "Please select a profile first.");
+            return;
+        }
+        setPreviewLoading(true);
+        try {
+            const preview = await generateDocumentPreview({
+                profileId: activeProfileId,
+                jobId,
+                documentType: "COVER_LETTER",
+            });
+            setPreviewContent(preview.content);
+        } catch (err) {
+            pushToast("error", err instanceof Error ? err.message : "Preview failed");
+        } finally {
+            setPreviewLoading(false);
+        }
+    }
+
     const isLoading = jobsLoading || profilesLoading;
+    const isError = jobsError || profilesError;
 
     return (
         <AppLayout>
@@ -114,6 +141,24 @@ export default function JobsPage() {
                     Add Job
                 </Link>
             </div>
+
+            {previewContent && (
+                <div className="mb-6 bg-white rounded-2xl shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold">Generation preview</h2>
+                        <button
+                            type="button"
+                            onClick={() => setPreviewContent(null)}
+                            className="text-sm text-slate-500 hover:text-slate-800"
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm text-slate-800 bg-slate-50 rounded-xl p-4 overflow-auto max-h-96">
+                        {previewContent}
+                    </pre>
+                </div>
+            )}
 
             {workflowStatus && (
                 <div className="mb-6 bg-blue-50 text-blue-800 px-4 py-3 rounded-xl">
@@ -140,6 +185,13 @@ export default function JobsPage() {
 
             {isLoading ? (
                 <LoadingGrid count={3} />
+            ) : isError ? (
+                <QueryErrorState
+                    onRetry={() => {
+                        void refetchJobs();
+                        void refetchProfiles();
+                    }}
+                />
             ) : jobs.length === 0 ? (
                 <EmptyState
                     title="No jobs yet"
@@ -187,6 +239,13 @@ export default function JobsPage() {
                                             className="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-500"
                                         >
                                             Calculate match
+                                        </button>
+                                        <button
+                                            onClick={() => handlePreview(job.id)}
+                                            disabled={previewLoading}
+                                            className="border border-indigo-300 text-indigo-700 px-4 py-2 rounded-xl hover:bg-indigo-50 disabled:opacity-50"
+                                        >
+                                            {previewLoading ? "Previewing..." : "Preview letter"}
                                         </button>
                                         <button
                                             onClick={() => handleGenerate(job.id, "COVER_LETTER")}

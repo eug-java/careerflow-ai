@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
-import { Badge, EmptyState, LoadingGrid, ScoreBar } from "../components/ui/Card";
+import { Badge, EmptyState, LoadingGrid, QueryErrorState, ScoreBar } from "../components/ui/Card";
 import { useDashboardQueries } from "../hooks/useDashboardQueries";
 import { formatRelativeTime } from "../lib/dashboardUtils";
 
 export default function MatchHistoryPage() {
-    const { profiles, jobs, matches, isLoading } = useDashboardQueries();
+    const { profiles, jobs, matches, isLoading, isError, refetchAll } = useDashboardQueries();
 
     const sortedMatches = [...matches].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -30,6 +30,8 @@ export default function MatchHistoryPage() {
 
             {isLoading ? (
                 <LoadingGrid count={3} />
+            ) : isError ? (
+                <QueryErrorState onRetry={() => void refetchAll()} />
             ) : sortedMatches.length === 0 ? (
                 <EmptyState
                     title="No matches yet"
@@ -73,6 +75,12 @@ export default function MatchHistoryPage() {
                                         <p className="mt-4 text-slate-700">{match.explanation}</p>
                                     </div>
                                     <div className="flex flex-col gap-2 min-w-40">
+                                        <Link
+                                            to={`/matches/${match.id}`}
+                                            className="text-center bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-500"
+                                        >
+                                            View details
+                                        </Link>
                                         <Link
                                             to={`/jobs/${match.jobId}`}
                                             className="text-center bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700"

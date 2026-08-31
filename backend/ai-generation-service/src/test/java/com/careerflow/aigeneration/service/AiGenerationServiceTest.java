@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -180,5 +181,28 @@ class AiGenerationServiceTest {
         assertThat(response.model()).isEqualTo("gpt-4o-mini");
         assertThat(response.content()).isEqualTo("AI content only");
         verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void generateShouldIgnoreSpoofedOwnerIdForUserRequests() {
+        UUID spoofedOwnerId = UUID.fromString("11111111-2222-3333-4444-555555555555");
+        UUID authenticatedUserId = TestAuthSupport.authenticateTestUser();
+        GenerateDocumentRequest request = new GenerateDocumentRequest(
+                TestData.PROFILE_ID,
+                TestData.JOB_ID,
+                DocumentType.RESUME,
+                spoofedOwnerId
+        );
+        var profile = TestData.profile();
+        var job = TestData.job();
+        when(profileClient.getProfile(TestData.PROFILE_ID)).thenReturn(profile);
+        when(jobClient.getJob(TestData.JOB_ID)).thenReturn(job);
+        when(aiResumeGenerator.generate(eq(authenticatedUserId), eq(profile), eq(job), eq(DocumentType.RESUME)))
+                .thenReturn("AI resume content");
+
+        service.generate(request);
+
+        verify(aiResumeGenerator).generate(eq(authenticatedUserId), eq(profile), eq(job), eq(DocumentType.RESUME));
+        verify(aiResumeGenerator, never()).generate(eq(spoofedOwnerId), any(), any(), any());
     }
 }

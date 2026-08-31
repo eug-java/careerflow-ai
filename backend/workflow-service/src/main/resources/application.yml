@@ -40,6 +40,8 @@ careerflow:
       document-generated: ${DOCUMENT_GENERATED_TOPIC:document.generated}
   services:
     ai-generation-url: ${AI_GENERATION_SERVICE_URL:http://localhost:8084}
+    profile-service-url: ${PROFILE_SERVICE_URL:http://localhost:8081}
+    job-service-url: ${JOB_SERVICE_URL:http://localhost:8082}
 
 resilience4j:
   retry:

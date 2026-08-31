@@ -32,3 +32,30 @@ export async function parseResumeFile(file: File): Promise<ParsedResume> {
 
     return response.data;
 }
+
+export type DocumentType = "COVER_LETTER" | "RESUME";
+
+export interface GeneratePreviewRequest {
+    profileId: string;
+    jobId: string;
+    documentType: DocumentType;
+}
+
+export interface GeneratePreviewResponse {
+    profileId: string;
+    jobId: string;
+    documentType: DocumentType;
+    generationMode: string;
+    model: string;
+    content: string;
+}
+
+export async function generateDocumentPreview(
+    request: GeneratePreviewRequest
+): Promise<GeneratePreviewResponse> {
+    const response = await apiClient.post<GeneratePreviewResponse>(
+        "/api/v1/generations/content",
+        request
+    );
+    return response.data;
+}
