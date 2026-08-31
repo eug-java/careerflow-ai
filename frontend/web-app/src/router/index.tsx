@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 
+import ApplicationsPage from "../pages/ApplicationsPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import DashboardPage from "../pages/DashboardPage";
@@ -33,6 +34,14 @@ export const router = createBrowserRouter([
         element: (
             <ProtectedRoute>
                 <DashboardPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/applications",
+        element: (
+            <ProtectedRoute>
+                <ApplicationsPage />
             </ProtectedRoute>
         ),
     },

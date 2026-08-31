@@ -17,6 +17,30 @@ export async function startDocumentGenerationWorkflow(
     return response.data;
 }
 
+export interface BatchWorkflowRequest {
+    profileId: string;
+    jobIds: string[];
+    documentType: "COVER_LETTER" | "RESUME";
+}
+
+export interface BatchWorkflowResponse {
+    workflows: Array<{
+        processInstanceKey: number;
+        processId: string;
+    }>;
+}
+
+export async function startBatchDocumentGenerationWorkflow(
+    request: BatchWorkflowRequest
+): Promise<BatchWorkflowResponse> {
+    const response = await apiClient.post<BatchWorkflowResponse>(
+        "/api/v1/workflows/document-generation/batch",
+        request
+    );
+
+    return response.data;
+}
+
 export interface WorkflowStatus {
     processInstanceKey: number;
     processId: string;

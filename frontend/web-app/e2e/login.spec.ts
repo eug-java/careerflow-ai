@@ -3,4 +3,5 @@ import { test, expect } from '@playwright/test';
 test('login page renders', async ({ page }) => {
   await page.goto('/login');
   await expect(page.getByText('Sign in to continue')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Create an account' })).toBeVisible();
 });

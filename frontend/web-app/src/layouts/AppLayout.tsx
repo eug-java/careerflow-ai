@@ -27,6 +27,9 @@ export default function AppLayout({ children }: Props) {
                     <NavLink to="/jobs" className={navClass}>
                         Jobs
                     </NavLink>
+                    <NavLink to="/applications" className={navClass}>
+                        Applications
+                    </NavLink>
                     <NavLink to="/matches" className={navClass}>
                         Matches
                     </NavLink>
