@@ -6,7 +6,6 @@ import com.careerflow.aigeneration.security.CredentialEncryptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -67,10 +66,9 @@ public class UserChatClientFactory {
     }
 
     private ChatClient buildClient(String apiKey, String model) {
-        OpenAiApi openAiApi = OpenAiApi.builder().apiKey(apiKey).build();
         OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(OpenAiChatOptions.builder()
+                .options(OpenAiChatOptions.builder()
+                        .apiKey(apiKey)
                         .model(model)
                         .temperature(DEFAULT_TEMPERATURE)
                         .build())
