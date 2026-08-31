@@ -10,6 +10,7 @@ import {
 } from "../hooks/useDashboardQueries";
 import { Badge, Card, EmptyState, LoadingGrid, ScoreBar } from "../components/ui/Card";
 import { calculateMatch } from "../api/matchingApi";
+import { createApplication } from "../api/applicationApi";
 import { startDocumentGenerationWorkflow } from "../api/workflowApi";
 import { computeSkillGap } from "../lib/dashboardUtils";
 import { useState } from "react";
@@ -80,6 +81,23 @@ export default function JobDetailPage() {
             pushToast("success", `Match: ${Number(result.totalScore).toFixed(0)}%`);
         } catch (error) {
             pushToast("error", error instanceof Error ? error.message : "Match failed");
+        } finally {
+            setBusy(null);
+        }
+    }
+
+    async function handleTrackApplication() {
+        if (!activeProfileId) {
+            pushToast("error", "Select a profile first.");
+            return;
+        }
+
+        setBusy("track");
+        try {
+            await createApplication({ profileId: activeProfileId, jobId: id, status: "SAVED" });
+            pushToast("success", "Application added to tracker.");
+        } catch (error) {
+            pushToast("error", error instanceof Error ? error.message : "Could not track application.");
         } finally {
             setBusy(null);
         }
@@ -162,6 +180,20 @@ export default function JobDetailPage() {
                             </option>
                         ))}
                     </select>
+                    <button
+                        onClick={handleTrackApplication}
+                        disabled={busy !== null}
+                        className="w-full border border-emerald-300 text-emerald-800 rounded-xl py-2 mb-2 hover:bg-emerald-50 disabled:opacity-50"
+                    >
+                        {busy === "track" ? "Saving..." : "Track application"}
+                    </button>
+                    <button
+                        onClick={handleTrackApplication}
+                        disabled={busy !== null}
+                        className="w-full border border-emerald-300 text-emerald-800 rounded-xl py-2 mb-2 hover:bg-emerald-50 disabled:opacity-50"
+                    >
+                        {busy === "track" ? "Saving..." : "Track application"}
+                    </button>
                     <button
                         onClick={handleMatch}
                         disabled={busy !== null}

@@ -5,7 +5,8 @@ import AppLayout from "../layouts/AppLayout";
 import { deleteJob } from "../api/jobApi";
 import { calculateMatch } from "../api/matchingApi";
 import { generateDocumentPreview } from "../api/generationApi";
-import { startDocumentGenerationWorkflow } from "../api/workflowApi";
+import { startBatchDocumentGenerationWorkflow, startDocumentGenerationWorkflow } from "../api/workflowApi";
+import { createApplication } from "../api/applicationApi";
 import { useJobsQuery, useProfilesQuery, useMatchesQuery } from "../hooks/useDashboardQueries";
 import { useWorkflowStatus } from "../hooks/useWorkflowStatus";
 import { Badge, EmptyState, LoadingGrid, QueryErrorState, ScoreBar } from "../components/ui/Card";
@@ -32,6 +33,7 @@ export default function JobsPage() {
     const [currentProcessInstanceKey, setCurrentProcessInstanceKey] = useState<number | null>(null);
     const [previewContent, setPreviewContent] = useState<string | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
+    const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
 
     const activeProfileId = selectedProfileId || profiles[0]?.id || "";
 
@@ -101,6 +103,54 @@ export default function JobsPage() {
             pushToast("info", "Document generation started.");
         } catch (err) {
             pushToast("error", err instanceof Error ? err.message : "Workflow failed");
+        }
+    }
+
+    async function handleTrackApplication(jobId: string) {
+        if (!activeProfileId) {
+            pushToast("error", "Please select a profile first.");
+            return;
+        }
+        try {
+            await createApplication({ profileId: activeProfileId, jobId, status: "SAVED" });
+            await queryClient.invalidateQueries({ queryKey: ["applications"] });
+            pushToast("success", "Application added to tracker.");
+        } catch (err) {
+            pushToast("error", err instanceof Error ? err.message : "Could not track application.");
+        }
+    }
+
+    function toggleJobSelection(jobId: string) {
+        setSelectedJobIds((current) =>
+            current.includes(jobId)
+                ? current.filter((item) => item !== jobId)
+                : [...current, jobId]
+        );
+    }
+
+    async function handleBatchGenerate(documentType: "COVER_LETTER" | "RESUME") {
+        if (!activeProfileId) {
+            pushToast("error", "Please select a profile first.");
+            return;
+        }
+        if (selectedJobIds.length === 0) {
+            pushToast("error", "Select at least one job.");
+            return;
+        }
+        try {
+            const result = await startBatchDocumentGenerationWorkflow({
+                profileId: activeProfileId,
+                jobIds: selectedJobIds,
+                documentType,
+            });
+            if (result.workflows.length > 0) {
+                setCurrentProcessInstanceKey(result.workflows[0].processInstanceKey);
+            }
+            await queryClient.invalidateQueries({ queryKey: ["workflows"] });
+            pushToast("success", `Started ${result.workflows.length} generation workflows.`);
+            setSelectedJobIds([]);
+        } catch (err) {
+            pushToast("error", err instanceof Error ? err.message : "Batch workflow failed");
         }
     }
 
@@ -181,6 +231,27 @@ export default function JobsPage() {
                         </option>
                     ))}
                 </select>
+                {selectedJobIds.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="text-sm text-slate-600 self-center">
+                            {selectedJobIds.length} selected
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => handleBatchGenerate("RESUME")}
+                            className="bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 text-sm"
+                        >
+                            Batch generate resumes
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleBatchGenerate("COVER_LETTER")}
+                            className="border border-slate-300 px-4 py-2 rounded-xl hover:bg-slate-50 text-sm"
+                        >
+                            Batch generate letters
+                        </button>
+                    </div>
+                )}
             </div>
 
             {isLoading ? (
@@ -234,6 +305,20 @@ export default function JobsPage() {
                                         )}
                                     </div>
                                     <div className="flex flex-col gap-2 min-w-48">
+                                        <label className="flex items-center gap-2 text-sm text-slate-600 px-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedJobIds.includes(job.id)}
+                                                onChange={() => toggleJobSelection(job.id)}
+                                            />
+                                            Select for batch
+                                        </label>
+                                        <button
+                                            onClick={() => handleTrackApplication(job.id)}
+                                            className="border border-emerald-300 text-emerald-800 px-4 py-2 rounded-xl hover:bg-emerald-50"
+                                        >
+                                            Track application
+                                        </button>
                                         <button
                                             onClick={() => handleMatch(job.id)}
                                             className="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-500"

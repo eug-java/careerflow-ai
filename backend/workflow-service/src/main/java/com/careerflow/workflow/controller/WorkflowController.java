@@ -3,6 +3,8 @@ package com.careerflow.workflow.controller;
 import com.careerflow.common.security.CurrentUserProvider;
 import com.careerflow.workflow.client.JobClient;
 import com.careerflow.workflow.client.ProfileClient;
+import com.careerflow.workflow.dto.StartBatchDocumentGenerationRequest;
+import com.careerflow.workflow.dto.StartBatchWorkflowResponse;
 import com.careerflow.workflow.dto.StartDocumentGenerationWorkflowRequest;
 import com.careerflow.workflow.dto.StartWorkflowResponse;
 import com.careerflow.workflow.dto.WorkflowListItem;
@@ -44,6 +46,27 @@ public class WorkflowController {
     @PostMapping("/document-generation")
     public StartWorkflowResponse startDocumentGeneration(@Valid @RequestBody StartDocumentGenerationWorkflowRequest request) {
         UUID ownerId = CurrentUserProvider.requireUserId();
+        return startSingleDocumentGeneration(ownerId, request);
+    }
+
+    @PostMapping("/document-generation/batch")
+    public StartBatchWorkflowResponse startBatchDocumentGeneration(
+            @Valid @RequestBody StartBatchDocumentGenerationRequest request
+    ) {
+        UUID ownerId = CurrentUserProvider.requireUserId();
+        List<StartWorkflowResponse> workflows = request.jobIds().stream()
+                .map(jobId -> startSingleDocumentGeneration(
+                        ownerId,
+                        new StartDocumentGenerationWorkflowRequest(request.profileId(), jobId, request.documentType())
+                ))
+                .toList();
+        return new StartBatchWorkflowResponse(workflows);
+    }
+
+    private StartWorkflowResponse startSingleDocumentGeneration(
+            UUID ownerId,
+            StartDocumentGenerationWorkflowRequest request
+    ) {
         assertResourcesAccessible(request);
 
         ProcessInstanceEvent event = zeebeClient.newCreateInstanceCommand()
