@@ -1,9 +1,7 @@
 package com.careerflow.common.client;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-@Component
 public class InternalClientHeaders {
 
     public static final String HEADER = "X-Careerflow-Internal-Key";
