@@ -10,6 +10,8 @@ name: careerflow
 x-postgres-defaults: &postgres-defaults
   image: postgres:16
   restart: unless-stopped
+  networks:
+    - careerflow
   environment: &postgres-env
     POSTGRES_USER: careerflow
     POSTGRES_PASSWORD: careerflow

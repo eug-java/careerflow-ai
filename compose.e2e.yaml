@@ -10,6 +10,8 @@ name: careerflow-e2e
 x-postgres-defaults: &postgres-defaults
   image: postgres:16-alpine
   restart: unless-stopped
+  networks:
+    - careerflow
   environment: &postgres-env
     POSTGRES_USER: careerflow
     POSTGRES_PASSWORD: careerflow
@@ -44,6 +46,8 @@ services:
       context: .
       dockerfile: backend/auth-service/Dockerfile
     restart: unless-stopped
+    networks:
+      - careerflow
     ports:
       - "8079:8079"
     environment:
@@ -60,6 +64,8 @@ services:
       context: .
       dockerfile: backend/api-gateway-service/Dockerfile
     restart: unless-stopped
+    networks:
+      - careerflow
     ports:
       - "8080:8080"
     environment:
@@ -68,3 +74,7 @@ services:
     depends_on:
       auth-service:
         condition: service_started
+
+networks:
+  careerflow:
+    name: careerflow-e2e-network
