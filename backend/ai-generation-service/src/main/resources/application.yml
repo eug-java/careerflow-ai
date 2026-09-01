@@ -6,7 +6,22 @@ spring:
     name: ai-generation-service
   autoconfigure:
     exclude:
+      # Chat clients are built per-user in UserChatClientFactory; disable Boot 4 OpenAI auto-config.
       - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5439/careerflow_ai}
     username: ${SPRING_DATASOURCE_USERNAME:careerflow}
