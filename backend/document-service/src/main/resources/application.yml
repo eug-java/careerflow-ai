@@ -41,6 +41,7 @@ careerflow:
     access-key: ${MINIO_ACCESS_KEY:careerflow}
     secret-key: ${MINIO_SECRET_KEY:careerflow123}
     bucket: ${MINIO_BUCKET:careerflow-documents}
+    region: ${MINIO_REGION:}
 
   kafka:
     topics:

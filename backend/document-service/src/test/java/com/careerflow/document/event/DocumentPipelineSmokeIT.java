@@ -10,8 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
 @SpringBootTest(properties = {
         "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration",
@@ -35,11 +36,8 @@ class DocumentPipelineSmokeIT {
             .withPassword("careerflow");
 
     @Container
-    static GenericContainer<?> minio = new GenericContainer<>(DockerImageName.parse("minio/minio:RELEASE.2025-09-07T16-13-09Z"))
-            .withEnv("MINIO_ROOT_USER", "careerflow")
-            .withEnv("MINIO_ROOT_PASSWORD", "careerflow123")
-            .withCommand("server", "/data")
-            .withExposedPorts(9000);
+    static LocalStackContainer localStack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8"))
+            .withServices(S3);
 
     @MockBean
     private DocumentGeneratedEventConsumer documentGeneratedEventConsumer;
@@ -50,9 +48,10 @@ class DocumentPipelineSmokeIT {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("careerflow.minio.endpoint",
-                () -> "http://" + minio.getHost() + ":" + minio.getMappedPort(9000));
-        registry.add("careerflow.minio.access-key", () -> "careerflow");
-        registry.add("careerflow.minio.secret-key", () -> "careerflow123");
+                () -> localStack.getEndpointOverride(S3).toString());
+        registry.add("careerflow.minio.access-key", localStack::getAccessKey);
+        registry.add("careerflow.minio.secret-key", localStack::getSecretKey);
+        registry.add("careerflow.minio.region", localStack::getRegion);
         registry.add("careerflow.minio.bucket", () -> "careerflow-documents");
     }
 

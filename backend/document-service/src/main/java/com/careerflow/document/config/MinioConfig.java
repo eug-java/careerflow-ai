@@ -17,11 +17,15 @@ public class MinioConfig {
     public MinioClient minioClient(
             @Value("${careerflow.minio.endpoint}") String endpoint,
             @Value("${careerflow.minio.access-key}") String accessKey,
-            @Value("${careerflow.minio.secret-key}") String secretKey
+            @Value("${careerflow.minio.secret-key}") String secretKey,
+            @Value("${careerflow.minio.region:}") String region
     ) {
-        return MinioClient.builder()
+        MinioClient.Builder builder = MinioClient.builder()
                 .endpoint(endpoint)
-                .credentials(accessKey, secretKey)
-                .build();
+                .credentials(accessKey, secretKey);
+        if (region != null && !region.isBlank()) {
+            builder.region(region);
+        }
+        return builder.build();
     }
 }
