@@ -8,20 +8,13 @@ updates:
     open-pull-requests-limit: 10
     ignore:
       - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
-        update-types: ["version-update:semver-major"]
+        versions: ["4.*", "5.*"]
       - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
-        update-types: ["version-update:semver-major"]
-      # springdoc 3.x targets Spring Boot 4 (Jackson auto-config clash on Boot 3.4).
+        versions: ["2025.*", "2026.*"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webflux-ui"
-        update-types: ["version-update:semver-major"]
+        versions: ["3.*"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
-        update-types: ["version-update:semver-major"]
-      # Boot 4 requires a full stack migration (Spring Cloud, springdoc, resilience4j, Spring AI, etc.).
-      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
-        update-types: ["version-update:semver-major"]
-      # 2025.x train targets Spring Boot 4; stay on 2024.x with Boot 3.4.
-      - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
-        update-types: ["version-update:semver-major"]
+        versions: ["3.*"]
 
   - package-ecosystem: npm
     directory: "/frontend/web-app"
@@ -29,7 +22,6 @@ updates:
       interval: weekly
     open-pull-requests-limit: 10
     ignore:
-      # typescript-eslint peer range is <6.1.0; TS 7 is installed via npm alias `typescript-7`.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
 
