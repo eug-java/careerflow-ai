@@ -9,6 +9,9 @@ updates:
     ignore:
       - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
         update-types: ["version-update:semver-major"]
+      # Spring Cloud 2024.x requires Boot 3.4.x (Boot 3.5+ needs a newer Cloud train).
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        versions: ["[3.5,)"]
       - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
         versions: ["[2025,)"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webflux-ui"
@@ -17,6 +20,8 @@ updates:
         versions: ["[2.8.15,)"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
+        versions: ["[2.8.15,)"]
       - dependency-name: "org.apache.tika:tika-parsers-standard-package"
         versions: ["4.1.0"]
 
@@ -28,10 +33,6 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
-        versions: ["[2.8.15,)"]
-      - dependency-name: "org.apache.tika:tika-parsers-standard-package"
-        versions: ["4.1.0"]
 
   - package-ecosystem: github-actions
     directory: "/"
