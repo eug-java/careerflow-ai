@@ -8,13 +8,13 @@ updates:
     open-pull-requests-limit: 10
     ignore:
       - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
-        versions: ["4.*", "5.*"]
+        update-types: ["version-update:semver-major"]
       - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
-        versions: ["2025.*", "2026.*"]
+        versions: ["[2025,)"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webflux-ui"
-        versions: ["3.*"]
+        update-types: ["version-update:semver-major"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
-        versions: ["3.*"]
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/frontend/web-app"
