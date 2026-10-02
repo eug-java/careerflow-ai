@@ -6,6 +6,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    ignore:
+      # Boot 4 requires a full stack migration (Spring Cloud, springdoc, resilience4j, Spring AI, etc.).
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/frontend/web-app"
