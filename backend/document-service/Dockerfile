@@ -4,13 +4,13 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn -B -ntp -f backend/pom.xml clean package -DskipTests -pl :document-service -am
+RUN mvn -B -ntp -f backend/pom.xml clean package -Dmaven.test.skip=true -pl :document-service -am
 
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY --from=build /app/backend/document-service/target/*-exec.jar app.jar
+COPY --from=build /app/backend/document-service/target/document-service-*-exec.jar app.jar
 
 EXPOSE 8085
 
