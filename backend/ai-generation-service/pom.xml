@@ -13,6 +13,11 @@
 
     <artifactId>ai-generation-service</artifactId>
 
+    <properties>
+        <!-- 4.1.0 parsers are not published to Maven Central yet; keep core and parsers aligned. -->
+        <tika.version>3.3.2</tika.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -109,12 +114,12 @@
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
-            <version>4.1.0</version>
+            <version>${tika.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parsers-standard-package</artifactId>
-            <version>3.2.2</version>
+            <version>${tika.version}</version>
         </dependency>
 
         <dependency>
