@@ -15,7 +15,7 @@
 
     <properties>
         <!-- 4.1.0 parsers are not published to Maven Central yet; keep core and parsers aligned. -->
-        <tika.version>3.3.2</tika.version>
+        <tika.version>4.1.0</tika.version>
     </properties>
 
     <dependencies>
