@@ -13,6 +13,8 @@ updates:
         versions: ["[2025,)"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webflux-ui"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springdoc:springdoc-openapi-starter-webflux-ui"
+        versions: ["[2.8.15,)"]
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.apache.tika:tika-parsers-standard-package"
@@ -26,6 +28,10 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
+        versions: ["[2.8.15,)"]
+      - dependency-name: "org.apache.tika:tika-parsers-standard-package"
+        versions: ["4.1.0"]
 
   - package-ecosystem: github-actions
     directory: "/"
