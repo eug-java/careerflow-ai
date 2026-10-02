@@ -10,6 +10,9 @@ updates:
       # Boot 4 requires a full stack migration (Spring Cloud, springdoc, resilience4j, Spring AI, etc.).
       - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
         update-types: ["version-update:semver-major"]
+      # 2025.x train targets Spring Boot 4; stay on 2024.x with Boot 3.4.
+      - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/frontend/web-app"
