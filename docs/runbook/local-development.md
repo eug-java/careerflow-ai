@@ -12,20 +12,24 @@
 
 ## Quick Start
 
+**Portfolio / full demo (recommended):** one Docker command — UI, gateway, all microservices, Kafka, MinIO, Zeebe, observability:
+
 ```bash
-cp .env.example .env
+make up
+# open http://localhost:5173 — demo / demo
+```
+
+`make up` creates `.env` from `.env.example` if missing. Compose also supplies dev defaults when `.env` is absent.
+
+**Local JVM development** (services on host, infra in Docker):
+
+```bash
 make infra-up
 make backend-verify
 cd frontend/web-app && npm ci && npm run dev
 ```
 
-Full stack with all services in Docker:
-
-```bash
-docker compose up -d --build
-# or
-make up
-```
+Optional: `cp .env.example .env` to customize secrets for JVM runs.
 
 ## Environment
 
@@ -87,7 +91,12 @@ cd frontend/web-app && npm run test:e2e   # Playwright (optional)
 make docker-build            # verify Dockerfiles
 ```
 
-Integration smoke test: `backend/document-service/.../DocumentPipelineSmokeIT` (Testcontainers: Postgres + MinIO).
+Integration tests (Failsafe, `mvn verify`):
+
+- `auth-service`: `AuthFlowIT` (Postgres)
+- `document-service`: `DocumentPipelineSmokeIT` (Postgres + LocalStack S3)
+
+Details: [docs/testing/coverage.md](../testing/coverage.md).
 
 ## Health Checks
 
