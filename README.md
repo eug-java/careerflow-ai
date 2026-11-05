@@ -130,6 +130,31 @@ User downloads PDF or DOCX
 - Docker
 - Node.js 22+
 
+## Quick start (portfolio / reviewers)
+
+One command — full stack (Postgres ×8, Kafka, MinIO, Zeebe, 9 backend services, frontend, Prometheus, Grafana, Jaeger):
+
+```bash
+make up
+# first run: image build can take several minutes
+```
+
+| URL | What |
+|-----|------|
+| http://localhost:5173 | UI — login **demo** / **demo** |
+| http://localhost:8080 | API gateway |
+| http://localhost:8080/swagger-ui.html | Aggregated API docs |
+
+**Works out of the box:** profiles, jobs, matching, application tracker, Camunda workflows, document pipeline (Kafka → document-service → MinIO), PDF/DOCX export, dashboard — using **template fallback** when no OpenAI key is configured.
+
+**Optional (not required for demo):**
+
+- **Real AI text:** add your key in the UI (**AI Settings**) or set `OPENAI_API_KEY` in `.env` before `make up`.
+- **Email inbox:** connect a real mailbox in the UI (IMAP/SMTP).
+- **GitHub login:** set `GITHUB_*` and `VITE_GITHUB_OAUTH_CLIENT_ID` in `.env` and rebuild frontend.
+
+Copy `.env.example` → `.env` only if you want to customize secrets; defaults are embedded in `compose.yaml` for local Docker.
+
 ## Start Infrastructure (local JVM dev)
 
 ```bash
