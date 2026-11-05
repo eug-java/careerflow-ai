@@ -1,6 +1,8 @@
 JAVA_HOME ?= /usr/lib/jvm/java-21-openjdk-amd64
 export JAVA_HOME
 
+COMPOSE_FULL = docker compose -f compose.yaml
+
 .PHONY: help up down infra-up infra-down backend-verify frontend-install frontend-test frontend-build docker-build compose-validate
 
 help:
@@ -18,10 +20,10 @@ help:
 
 up:
 	@test -f .env || cp .env.example .env
-	docker compose up -d --build
+	$(COMPOSE_FULL) up -d --build
 
 down:
-	docker compose down
+	$(COMPOSE_FULL) down
 
 infra-up:
 	docker compose -f docker-compose.yml up -d
