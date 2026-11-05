@@ -167,13 +167,7 @@ Infrastructure includes PostgreSQL (profile `:5432`, job `:5433`, matching `:543
 
 ### Full stack in Docker (one command)
 
-```bash
-# copy .env (JWT, encryption keys), then:
-docker compose up -d --build
-
-# or
-make up
-```
+Same as [Quick start (portfolio / reviewers)](#quick-start-portfolio--reviewers): `make up` or `docker compose up -d --build` (no `.env` required for local demo defaults).
 
 This builds and starts all 9 backend services, frontend, Postgres, Kafka, MinIO, Zeebe, Prometheus, and Grafana.
 
@@ -229,18 +223,18 @@ demo / demo
 
 ## Test Coverage
 
-Backend uses [JaCoCo](https://www.jacoco.org/) during `mvn verify`. Each module must maintain at least **50% line coverage** (excluding Spring Boot application entrypoints).
+Backend uses [JaCoCo](https://www.jacoco.org/) during `mvn verify`. Each module must maintain at least **50% line coverage** (excluding Spring Boot application entrypoints). Module-level details, exclusions, and test counts: [docs/testing/coverage.md](docs/testing/coverage.md).
 
 ```bash
 make backend-verify
 ```
 
-Integration smoke tests use **Testcontainers**:
+Integration tests use **Testcontainers** (Failsafe):
 
-- `DocumentPipelineSmokeIT` in `document-service` (PostgreSQL + MinIO)
+- `DocumentPipelineSmokeIT` in `document-service` (PostgreSQL + LocalStack S3)
 - `AuthFlowIT` in `auth-service` (register → login → refresh rotation → logout)
 
-Frontend unit tests use **Vitest**:
+Frontend unit tests use **Vitest** (4 test files; no coverage gate in CI):
 
 ```bash
 make frontend-test

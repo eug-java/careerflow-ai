@@ -1,8 +1,36 @@
-# Unit Tests
+# Unit tests
 
-## Recommended dependencies
+See also: [coverage.md](./coverage.md) for JaCoCo gates, integration tests, and frontend Vitest.
 
-Each backend service should have:
+## Backend
+
+### Run all unit tests (no integration)
+
+```bash
+mvn -B -ntp -f backend/pom.xml test
+```
+
+### Run full verify (unit + integration + JaCoCo check)
+
+```bash
+make backend-verify
+```
+
+### Run one module
+
+```bash
+mvn -B -ntp -f backend/pom.xml test -pl :profile-service -am
+```
+
+### Run one test class
+
+```bash
+mvn -B -ntp -f backend/pom.xml test -pl :profile-service -Dtest=CandidateProfileServiceTest
+```
+
+### Recommended test dependencies
+
+Each backend service includes:
 
 ```xml
 <dependency>
@@ -12,33 +40,10 @@ Each backend service should have:
 </dependency>
 ```
 
-If Mockito JUnit Jupiter is not included in your setup, add:
-
-```xml
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-junit-jupiter</artifactId>
-    <scope>test</scope>
-</dependency>
-```
-
-## Run all tests
+## Frontend
 
 ```bash
-cd backend
-mvn test
+cd frontend/web-app && npm ci && npm test
 ```
 
-## Run one service
-
-```bash
-cd backend/profile-service
-mvn test
-```
-
-## Run one test class
-
-```bash
-cd backend
-mvn -pl profile-service -Dtest=ProfileServiceTest test
-```
+Watch mode: `npm run test:watch`.

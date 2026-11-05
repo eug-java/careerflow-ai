@@ -17,32 +17,17 @@ Delete data
 Total demo time: 5-7 minutes.
 
 # 1. Start the Application
-   Start infrastructure
-```bash
-   docker compose up -d
-```
-   Start backend services
 
-Recommended order:
+Full stack in Docker (recommended for demos):
 
-- auth-service
-- profile-service
-- job-service
-- matching-service
-- document-service
-- ai-generation-service
-- workflow-service
-- api-gateway-service
-- 
-Start frontend
 ```bash
-cd frontend/web-app
-npm run dev
+make up
+# first run: allow several minutes for image builds
 ```
 
-Open:
+Open http://localhost:5173 (frontend is included; no separate `npm run dev` needed).
 
-http://localhost:5173
+Alternative for JVM debugging: `make infra-up`, then start services locally — see [local-development.md](./local-development.md).
 # 2. Login
 
 Use demo credentials:
