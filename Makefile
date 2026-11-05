@@ -17,6 +17,7 @@ help:
 	@echo "  make compose-validate  Validate all compose files"
 
 up:
+	@test -f .env || cp .env.example .env
 	docker compose up -d --build
 
 down:
