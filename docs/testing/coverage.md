@@ -35,7 +35,7 @@ CI uploads `backend/**/target/site/jacoco/` as the `jacoco-reports` artifact.
 Current integration tests:
 
 - `auth-service`: `AuthFlowIT` — register, login, refresh rotation, logout (Testcontainers Postgres)
-- `document-service`: `DocumentPipelineSmokeIT` — Kafka event → Postgres + MinIO (Testcontainers)
+- `document-service`: `DocumentPipelineSmokeIT` — event pipeline → Postgres + LocalStack S3 (Testcontainers)
 
 ### Test class counts (unit `*Test.java`)
 

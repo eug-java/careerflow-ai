@@ -60,7 +60,7 @@ Each user saves their OpenAI API key in the app under **Settings → AI Settings
 | email-postgres | 5438 |
 | ai-generation-postgres | 5439 |
 | Kafka | 9092 |
-| MinIO API / Console | 9000 / 9001 |
+| LocalStack (S3) | 4566 |
 | Zeebe | 26500 |
 | Prometheus | 9090 |
 | Grafana | 3001 |
@@ -149,9 +149,9 @@ docker exec -it careerflow-kafka /opt/kafka/bin/kafka-topics.sh \
   --list
 ```
 
-### MinIO document missing
+### Document object missing in S3
 
-Open http://localhost:9001 and check bucket `careerflow-documents`.
+Ensure `careerflow-localstack` is healthy (`curl -sf http://localhost:4566/_localstack/health`). Bucket `careerflow-documents` is created on first write by document-service.
 
 ### AI generation fails
 

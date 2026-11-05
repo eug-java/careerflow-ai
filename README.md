@@ -175,7 +175,7 @@ This builds and starts all 9 backend services, frontend, Postgres, Kafka, MinIO,
 |-----|---------|
 | http://localhost:5173 | Frontend |
 | http://localhost:8080 | API Gateway |
-| http://localhost:9001 | MinIO Console |
+| http://localhost:4566 | LocalStack (S3 API for documents) |
 | http://localhost:3001 | Grafana (admin/admin) |
 | http://localhost:9090 | Prometheus |
 | http://localhost:16686 | Jaeger UI (distributed tracing) |

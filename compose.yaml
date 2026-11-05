@@ -36,8 +36,9 @@ x-service-defaults: &service-defaults
   networks:
     - careerflow
 
-# minio/minio was removed from Docker Hub; same tag is published on Quay.
-x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+# S3-compatible object storage (MinIO SDK). LocalStack pulls reliably from Docker Hub;
+# quay.io/minio and docker.io/minio/minio are often blocked without registry login.
+x-localstack-image: &localstack-image localstack/localstack:3.8
 
 services:
   # ── Data stores ──────────────────────────────────────────────────────────
@@ -181,23 +182,21 @@ services:
       timeout: 10s
       retries: 10
 
-  minio:
-    image: *minio-image
-    container_name: careerflow-minio
+  localstack:
+    image: *localstack-image
+    container_name: careerflow-localstack
     restart: unless-stopped
     networks:
       - careerflow
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "4566:4566"
     environment:
-      MINIO_ROOT_USER: careerflow
-      MINIO_ROOT_PASSWORD: careerflow123
-    command: server /data --console-address ":9001"
+      SERVICES: s3
+      DEFAULT_REGION: us-east-1
     volumes:
-      - minio-data:/data
+      - localstack-data:/var/lib/localstack
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -375,16 +374,17 @@ services:
       SPRING_DATASOURCE_USERNAME: careerflow
       SPRING_DATASOURCE_PASSWORD: careerflow
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: careerflow
-      MINIO_SECRET_KEY: careerflow123
+      MINIO_ENDPOINT: http://localstack:4566
+      MINIO_ACCESS_KEY: test
+      MINIO_SECRET_KEY: test
+      MINIO_REGION: us-east-1
       MINIO_BUCKET: careerflow-documents
     depends_on:
       document-postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      minio:
+      localstack:
         condition: service_healthy
 
   workflow-service:
@@ -500,4 +500,4 @@ volumes:
   auth-postgres-data:
   email-postgres-data:
   ai-generation-postgres-data:
-  minio-data:
+  localstack-data:
